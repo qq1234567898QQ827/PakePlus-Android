@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>高中物理动画 · 光滑半圆槽与小物块系统</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: radial-gradient(ellipse at center, #0a0f14 0%, #030608 100%);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 12px;
+        }
+        .container {
+            background: rgba(10, 18, 28, 0.55);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 2.2rem;
+            padding: 1.2rem 1.6rem 1.2rem;
+            box-shadow: 0 30px 60px rgba(0, 160, 255, 0.15), 0 0 0 1px rgba(0, 200, 255, 0.2), inset 0 0 30px rgba(0, 180, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            max-height: 100vh;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: 850px;
+            border-radius: 1.6rem;
+            background: #0a1218;
+            box-shadow: 0 0 30px rgba(0, 180, 240, 0.25), 0 15px 35px rgba(0, 0, 0, 0.7), inset 0 0 50px rgba(0, 200, 255, 0.06);
+        }
+        .control-panel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8rem;
+            color: #c8e8ff;
+            font-size: 1.1rem;
+            background: rgba(8, 20, 30, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 2.5rem;
+            padding: 0.8rem 1.6rem;
+            border: 1px solid rgba(0, 180, 240, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 120, 200, 0.15);
+        }
+        .buttons-wrapper { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.8rem; }
+        .sliders-wrapper { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.8rem 1.5rem; }
+        .slider-group { display: flex; align-items: center; gap: 0.4rem; }
+        .slider-group label { font-weight: 500; color: #b0d8f0; white-space: nowrap; font-size: 1rem; }
+        input[type="range"] { width: 80px; accent-color: #30a0d0; }
+        button {
+            background: #1a4058; border: none; color: #d0f0ff; font-weight: bold;
+            padding: 0.6rem 1.5rem; border-radius: 2.5rem; letter-spacing: 0.4px;
+            cursor: pointer; font-size: 1rem; transition: 0.25s;
+            background: linear-gradient(180deg, #255870 0%, #0e3448 100%);
+            box-shadow: 0 4px 16px rgba(0, 150, 220, 0.35);
+            border: 1px solid rgba(80, 200, 255, 0.35);
+            white-space: nowrap;
+        }
+        button:hover { background: linear-gradient(180deg, #307090 0%, #155068 100%); box-shadow: 0 8px 22px rgba(0, 180, 255, 0.5); color: #ffffff; }
+        button.active { background: linear-gradient(180deg, #d04040 0%, #a02030 100%); border-color: rgba(255, 140, 160, 0.6); box-shadow: 0 4px 18px rgba(255, 60, 80, 0.4); color: #fff; }
+        .value-display { min-width: 3rem; text-align: right; font-weight: 600; color: #a0d8f8; font-size: 1rem; }
+        .fixed-param { color: #a0d8f8; font-size: 1rem; font-weight: 500; }
+        .fixed-param span { color: #f7d8aa; font-weight: 600; }
+    </style>
+  <style>
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div><div style="position:fixed;top:0;left:0;right:0;height:34px;line-height:34px;text-align:center;background:linear-gradient(90deg,rgba(15,25,38,0.92),rgba(25,45,65,0.92),rgba(15,25,38,0.92));color:#8fd8ff;font-size:15px;letter-spacing:2px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,0.5);font-family:'PingFang SC','Microsoft YaHei',sans-serif;pointer-events:none;">齐老师动画抖音 35320300542</div>
+<div class="container">
+    <canvas id="physicsCanvas" width="850" height="420"></canvas>
+    <div class="control-panel">
+        <div class="buttons-wrapper">
+            <button id="resetButton">↺ 重置</button>
+            <button id="pauseButton">⏯️ 暂停</button>
+            <button id="trailButton" class="active">🔴 轨迹: 开</button>
+        </div>
+        <div class="sliders-wrapper">
+            <div class="slider-group"><label>槽质量 M</label><input type="range" id="massM" min="1.0" max="8.0" value="3.5" step="0.1"><span class="value-display" id="massMVal">3.5</span>kg</div>
+            <div class="slider-group"><label>球质量 m</label><input type="range" id="massm" min="0.3" max="3.0" value="0.9" step="0.1"><span class="value-display" id="massmVal">0.9</span>kg</div>
+            <div class="slider-group"><label>下落高度 H</label><input type="range" id="heightH" min="0.2" max="2.5" value="0.8" step="0.1"><span class="value-display" id="heightHVal">0.8</span>m</div>
+            <div class="fixed-param">物块质量 m<sub>块</sub> = <span>0.2</span> kg（固定）</div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('physicsCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const trailCanvas = document.createElement('canvas');
+    trailCanvas.width = canvas.width;
+    trailCanvas.height = canvas.height;
+    const trailCtx = trailCanvas.getContext('2d');
+
+    const massMInput = document.getElementById('massM');
+    const massmInput = document.getElementById('massm');
+    const heightHInput = document.getElementById('heightH');
+    const massMVal = document.getElementById('massMVal');
+    const massmVal = document.getElementById('massmVal');
+    const heightHVal = document.getElementById('heightHVal');
+    const resetBtn = document.getElementById('resetButton');
+    const pauseBtn = document.getElementById('pauseButton');
+    const trailBtn = document.getElementById('trailButton');
+
+    const mBlock_fixed = 0.2;
+    let params = { M: 3.5, m: 0.9, H: 0.8 };
+    const R = 2.0;
+    const GAP = 0.3;
+    const BLOCK_SIZE = 1.0;
+    const g = 9.8;
+    const SCALE = 60;
+    const GROUND_Y = 350;
+    const ORIGIN_X = 280;
+    const BALL_R = 0.2;
+
+    const bgParticles = [];
+    for (let i = 0; i < 45; i++) {
+        bgParticles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: 0.5 + Math.random() * 1.5,
+            vx: (Math.random() - 0.5) * 0.15,
+            vy: -0.1 - Math.random() * 0.4,
+            alpha: 0.15 + Math.random() * 0.4,
+            phase: Math.random() * Math.PI * 2
+        });
+    }
+
+    function toCanvasX(px) { return ORIGIN_X + px * SCALE; }
+    function toCanvasY(py) { return GROUND_Y - py * SCALE; }
+
+    const State = { FALLING: 'falling', SLIDING: 'sliding', FREE_FLY: 'free_fly' };
+    let simState = State.FALLING;
+    let paused = false;
+    let showTrail = true;
+
+    let x_O = 0.0, v_O = 0.0;
+    let phi = 0.0, omega = 0.0;
+    let ballX = 0.0, ballY = 0.0, ballVx = 0.0, ballVy = 0.0;
+    let v0 = 0.0;
+    let freeSide = 'left';
+    let trailPoints = [];
+
+    let separated = false;
+    let v_block_sep = 0.0;
+    let x_block = 0.0;
+    let effective_H = 0.0;
+
+    function createWoodPattern() {
+        const pc = document.createElement('canvas'); pc.width = 220; pc.height = 110;
+        const pctx = pc.getContext('2d');
+        pctx.fillStyle = '#8B5E3C'; pctx.fillRect(0, 0, 220, 110);
+        for (let i = 0; i < 45; i++) {
+            const y = i * 3 + Math.sin(i * 1.8) * 1.5;
+            pctx.beginPath(); pctx.moveTo(0, y);
+            for (let x = 0; x <= 220; x += 12) pctx.lineTo(x, y + Math.sin(x * 0.04 + i * 0.7) * 2.0 + Math.cos(x * 0.025) * 1.2);
+            pctx.strokeStyle = i % 3 === 0 ? '#6B3A2A' : (i % 3 === 1 ? '#9B6B4A' : '#7A4A32');
+            pctx.lineWidth = 1.4; pctx.stroke();
+        }
+        for (let j = 0; j < 8; j++) {
+            const baseY = 18 + j * 14;
+            pctx.beginPath(); pctx.moveTo(0, baseY);
+            for (let x = 0; x <= 220; x += 10) pctx.lineTo(x, baseY + Math.sin(x * 0.035 + j) * 3.5);
+            pctx.strokeStyle = '#4A2818'; pctx.lineWidth = 2.2; pctx.stroke();
+        }
+        for (let k = 0; k < 20; k++) {
+            const y = 10 + k * 6;
+            pctx.beginPath(); pctx.moveTo(0, y);
+            for (let x = 0; x <= 220; x += 18) pctx.lineTo(x, y + Math.sin(x * 0.06 + k) * 1.0);
+            pctx.strokeStyle = '#A07050'; pctx.lineWidth = 0.7; pctx.stroke();
+        }
+        return ctx.createPattern(pc, 'repeat');
+    }
+    const woodPattern = createWoodPattern();
+
+    function readParams() {
+        params.M = +massMInput.value;
+        params.m = +massmInput.value;
+        params.H = +heightHInput.value;
+        massMVal.textContent = params.M.toFixed(1);
+        massmVal.textContent = params.m.toFixed(1);
+        heightHVal.textContent = params.H.toFixed(1);
+    }
+
+    function resetSim() {
+        readParams();
+        v0 = Math.sqrt(2 * g * params.H);
+        effective_H = params.H;
+        simState = State.FALLING;
+        x_O = 0.0; v_O = 0.0;
+        phi = 0.0; omega = 0.0;
+        // 小球侧边与凹槽相切：球心在右侧边缘内侧
+        ballX = R - BALL_R;
+        ballY = R + GAP + params.H;
+        ballVx = 0.0; ballVy = 0.0;
+        freeSide = 'left';
+        trailPoints = [];
+        trailCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        separated = false;
+        v_block_sep = 0.0;
+        x_block = R + BLOCK_SIZE / 2;
+    }
+
+    function getBallAbsPos() {
+        if (simState === State.SLIDING) {
+            const Reff = R - BALL_R;
+            return { x: x_O + Reff * Math.cos(phi), y: (R + GAP) - Reff * Math.sin(phi) };
+        } else {
+            return { x: ballX, y: ballY };
+        }
+    }
+
+    function addTrailPoint() {
+        const pos = getBallAbsPos();
+        trailPoints.push({ x: pos.x, y: pos.y });
+        if (trailPoints.length > 150) flushTrailToOffscreen();
+    }
+
+    function flushTrailToOffscreen() {
+        if (trailPoints.length < 2) return;
+        trailCtx.beginPath();
+        trailCtx.strokeStyle = '#e03030';
+        trailCtx.lineWidth = 2.0;
+        trailCtx.lineCap = 'round'; trailCtx.lineJoin = 'round';
+        const first = trailPoints[0];
+        trailCtx.moveTo(toCanvasX(first.x), toCanvasY(first.y));
+        for (let i = 1; i < trailPoints.length; i++) {
+            const pt = trailPoints[i];
+            trailCtx.lineTo(toCanvasX(pt.x), toCanvasY(pt.y));
+        }
+        trailCtx.stroke();
+        trailPoints = [{ x: trailPoints[trailPoints.length - 1].x, y: trailPoints[trailPoints.length - 1].y }];
+    }
+
+    function stepFalling(dt) {
+        ballVy -= g * dt;
+        ballY += ballVy * dt;
+        ballX = R - BALL_R + x_O;
+        // 球心到达槽口高度时进入滑动（相切位置）
+        if (ballY <= R + GAP) {
+            ballY = R + GAP;
+            v0 = Math.abs(ballVy);
+            phi = 0.0;
+            omega = v0 / (R - BALL_R);
+            x_O = 0.0; v_O = 0.0;
+            simState = State.SLIDING;
+        }
+    }
+
+    function stepSliding(dt) {
+        const Reff = R - BALL_R;
+        const M_total = separated ? params.M : (params.M + mBlock_fixed);
+        const m = params.m;
+        const s = Math.sin(phi);
+        const c = Math.cos(phi);
+        const mu = m / (M_total + m);
+        const denom = Reff * (1 - mu * s * s);
+        const alpha = (g * c + mu * Reff * omega * omega * c * s) / denom;
+
+        omega += alpha * dt;
+        phi += omega * dt;
+
+        if (!separated) {
+            v_O = (m * Reff * omega * s) / (params.M + mBlock_fixed + m);
+        } else {
+            v_O = (-mBlock_fixed * v_block_sep + m * Reff * omega * s) / (params.M + m);
+        }
+        x_O += v_O * dt;
+
+        if (!separated && phi >= Math.PI / 2 && omega > 0) {
+            const E_total = params.m * g * (R + GAP + params.H);
+            const E_block = 0.5 * mBlock_fixed * v_O * v_O;
+            const E_rem = Math.max(0, E_total - E_block);
+            effective_H = Math.max(0, E_rem / (params.m * g) - (R + GAP));
+            v0 = Math.sqrt(2 * g * effective_H);
+            separated = true;
+            v_block_sep = v_O;
+            x_block = x_O + R + BLOCK_SIZE / 2;
+        }
+
+        if (phi >= Math.PI) {
+            phi = Math.PI;
+            v_O = separated ? (-mBlock_fixed * v_block_sep) / (params.M + params.m) : 0.0;
+            // 左侧脱离，球心在边缘内侧
+            ballX = x_O - R + BALL_R;
+            ballY = R + GAP;
+            ballVx = v_O;
+            ballVy = Reff * omega;
+            freeSide = 'left';
+            simState = State.FREE_FLY;
+        } else if (phi <= 0.0) {
+            phi = 0.0;
+            v_O = separated ? (-mBlock_fixed * v_block_sep) / (params.M + params.m) : 0.0;
+            ballX = x_O + R - BALL_R;
+            ballY = R + GAP;
+            ballVx = v_O;
+            ballVy = -Reff * omega;
+            freeSide = 'right';
+            simState = State.FREE_FLY;
+        }
+    }
+
+    function stepFreeFly(dt) {
+        ballVy -= g * dt;
+        ballY += ballVy * dt;
+        x_O += v_O * dt;
+        ballX = (freeSide === 'left') ? (x_O - R + BALL_R) : (x_O + R - BALL_R);
+
+        if (ballY <= R + GAP && ballVy < 0) {
+            const targetX = (freeSide === 'left') ? (x_O - R + BALL_R) : (x_O + R - BALL_R);
+            if (Math.abs(ballX - targetX) < 0.15) {
+                phi = (freeSide === 'left') ? Math.PI : 0.0;
+                omega = (freeSide === 'left') ? -v0 / (R - BALL_R) : v0 / (R - BALL_R);
+                ballY = R + GAP;
+                ballX = targetX;
+                simState = State.SLIDING;
+            }
+        }
+    }
+
+    function update(dt) {
+        if (paused) return;
+        const maxDt = 0.003;
+        let rem = dt;
+        while (rem > 0) {
+            const s = Math.min(rem, maxDt);
+            if (simState === State.FALLING) stepFalling(s);
+            else if (simState === State.SLIDING) stepSliding(s);
+            else if (simState === State.FREE_FLY) stepFreeFly(s);
+            rem -= s;
+            addTrailPoint();
+        }
+        if (separated) x_block += v_block_sep * dt;
+        else x_block = x_O + R + BLOCK_SIZE / 2;
+    }
+
+    function drawBackground(elapsed) {
+        const grad = ctx.createRadialGradient(canvas.width/2, canvas.height/2, 50, canvas.width/2, canvas.height/2, 550);
+        grad.addColorStop(0, '#0e2030'); grad.addColorStop(0.6, '#081218'); grad.addColorStop(1, '#020608');
+        ctx.fillStyle = grad; ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.strokeStyle = 'rgba(0,180,220,0.08)'; ctx.lineWidth = 0.5;
+        const gs = 35;
+        for (let x = gs; x < canvas.width; x += gs) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke(); }
+        for (let y = gs; y < canvas.height; y += gs) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
+        for (const p of bgParticles) {
+            p.y += p.vy * 0.8; p.x += p.vx;
+            if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+            if (p.x < -10) p.x = canvas.width + 10;
+            if (p.x > canvas.width + 10) p.x = -10;
+            const alpha = p.alpha + 0.07 * Math.sin(elapsed * 2.5 + p.phase);
+            ctx.fillStyle = `rgba(120,210,255,${Math.max(0.05, alpha)})`;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+        }
+    }
+
+    function draw() {
+        const elapsed = performance.now() / 1000;
+        drawBackground(elapsed);
+
+        ctx.fillStyle = '#1a2830';
+        ctx.fillRect(20, GROUND_Y, canvas.width-40, canvas.height-GROUND_Y);
+        ctx.fillStyle = '#2a4048'; ctx.fillRect(20, GROUND_Y, canvas.width-40, 6);
+        ctx.strokeStyle = '#3a6068'; ctx.lineWidth = 2.5; ctx.setLineDash([6,5]);
+        ctx.beginPath(); ctx.moveTo(20, GROUND_Y); ctx.lineTo(canvas.width-20, GROUND_Y); ctx.stroke();
+        ctx.setLineDash([]);
+
+        const cx = toCanvasX(x_O), cy = toCanvasY(R+GAP), rPx = R*SCALE;
+
+        const woodPath = new Path2D();
+        woodPath.rect(cx-rPx, cy, 2*rPx, GROUND_Y-cy);
+        woodPath.arc(cx, cy, rPx, 0, Math.PI, false);
+        ctx.save(); ctx.fillStyle = woodPattern; ctx.fill(woodPath, 'evenodd'); ctx.restore();
+        ctx.beginPath(); ctx.arc(cx, cy, rPx, 0, Math.PI, false);
+        ctx.strokeStyle = '#4A2818'; ctx.lineWidth = 5; ctx.stroke();
+        ctx.strokeStyle = '#6B3A2A'; ctx.lineWidth = 2.5; ctx.stroke();
+
+        const bLeft = toCanvasX(x_block - BLOCK_SIZE/2);
+        const bTop = toCanvasY(BLOCK_SIZE);
+        const bRight = toCanvasX(x_block + BLOCK_SIZE/2);
+        const bBottom = GROUND_Y;
+        ctx.save(); ctx.fillStyle = woodPattern;
+        ctx.fillRect(bLeft, bTop, bRight-bLeft, bBottom-bTop);
+        ctx.strokeStyle = '#4A2818'; ctx.lineWidth = 3; ctx.strokeRect(bLeft, bTop, bRight-bLeft, bBottom-bTop);
+        ctx.strokeStyle = '#6B3A2A'; ctx.lineWidth = 1.5; ctx.strokeRect(bLeft+2, bTop+2, bRight-bLeft-4, bBottom-bTop-4);
+        ctx.restore();
+
+        if (showTrail && trailPoints.length > 1) {
+            ctx.beginPath();
+            ctx.strokeStyle = '#ff3a40'; ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            const first = trailPoints[0];
+            ctx.moveTo(toCanvasX(first.x), toCanvasY(first.y));
+            for (let i = 1; i < trailPoints.length; i++) ctx.lineTo(toCanvasX(trailPoints[i].x), toCanvasY(trailPoints[i].y));
+            ctx.stroke();
+            ctx.drawImage(trailCanvas, 0, 0);
+        }
+
+        function drawBall(bx, by) {
+            const grad = ctx.createRadialGradient(bx-3, by-5, 1.2, bx, by, 12);
+            grad.addColorStop(0, '#ffffff'); grad.addColorStop(0.3, '#d0d8e0');
+            grad.addColorStop(0.6, '#8898a8'); grad.addColorStop(1, '#303840');
+            ctx.beginPath(); ctx.arc(bx, by, 12, 0, Math.PI*2);
+            ctx.fillStyle = grad; ctx.fill();
+            ctx.strokeStyle = '#181e24'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath(); ctx.arc(bx-3, by-5, 2.6, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fill();
+        }
+
+        const ballPos = getBallAbsPos();
+        drawBall(toCanvasX(ballPos.x), toCanvasY(ballPos.y));
+
+        ctx.font = 'bold 12px "PingFang SC"'; ctx.fillStyle = 'rgba(180,220,240,0.8)';
+        ctx.fillText('光滑水平地面', 580, GROUND_Y-10);
+    }
+
+    let lastT = 0;
+    function loop(ts) {
+        if (!lastT) lastT = ts;
+        let dt = (ts - lastT) / 1000;
+        if (dt > 0.1) dt = 0.016;
+        update(dt);
+        draw();
+        lastT = ts;
+        requestAnimationFrame(loop);
+    }
+
+    function onParamChange() { readParams(); resetSim(); }
+    massMInput.addEventListener('input', () => massMVal.textContent = (+massMInput.value).toFixed(1));
+    massmInput.addEventListener('input', () => massmVal.textContent = (+massmInput.value).toFixed(1));
+    heightHInput.addEventListener('input', () => heightHVal.textContent = (+heightHInput.value).toFixed(1));
+    massMInput.addEventListener('change', onParamChange);
+    massmInput.addEventListener('change', onParamChange);
+    heightHInput.addEventListener('change', onParamChange);
+    resetBtn.addEventListener('click', () => { readParams(); resetSim(); });
+    pauseBtn.addEventListener('click', () => { paused = !paused; });
+    trailBtn.addEventListener('click', () => {
+        showTrail = !showTrail;
+        trailBtn.textContent = showTrail ? '🔴 轨迹: 开' : '⚪ 轨迹: 关';
+        trailBtn.classList.toggle('active', showTrail);
+    });
+
+    readParams(); resetSim(); lastT = 0;
+    requestAnimationFrame(loop);
+})();
+</script>
+
+<script>
+(function(){
+  var IS_HOME = (location.pathname.split('/').pop() === 'index.html' || location.pathname.split('/').pop() === '');
+
+  /* 1. 禁用右键菜单 */
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); try{ e.returnValue = false; }catch(_){} return false; });
+  /* 2. 鼠标右键按下直接吞掉 */
+  document.addEventListener('mousedown', function(e){ if(e.button === 2){ e.preventDefault(); return false; } });
+  document.addEventListener('mouseup',   function(e){ if(e.button === 2){ e.preventDefault(); return false; } });
+
+  /* 3. 禁用快捷键 */
+  document.addEventListener('keydown', function(e){
+    var k = (e.key || '').toLowerCase();
+    var ctrl = e.ctrlKey || e.metaKey;
+    var blocked = false;
+    /* F12 */
+    if(e.key === 'F12'){ blocked = true; }
+    /* Ctrl+U / S / P / C / V / X */
+    if(ctrl && ['u','s','p','c','v','x'].indexOf(k) >= 0){ blocked = true; }
+    /* Ctrl+Shift+I / J / C */
+    if(ctrl && e.shiftKey && ['i','j','c'].indexOf(k) >= 0){ blocked = true; }
+    if(blocked){ e.preventDefault(); try{ e.returnValue = false; }catch(_){} return false; }
+    /* ESC 返回主页 */
+    if(e.key === 'Escape' && !IS_HOME){
+      location.href = 'index.html';
+    }
+  });
+
+  /* 4. 禁用文本选择（input/textarea 放行） */
+  document.addEventListener('selectstart', function(e){
+    var tag = (e.target.tagName || '').toUpperCase();
+    if(tag !== 'INPUT' && tag !== 'TEXTAREA'){ e.preventDefault(); return false; }
+  });
+  /* 5. 禁用拖拽 */
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); return false; });
+
+  /* 6. 注入 user-select 样式（input/textarea 仍可选） */
+  var style = document.createElement('style');
+  style.textContent = 'body{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;}input,textarea{-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;}img{-webkit-user-drag:none;user-drag:none;}';
+  (document.head || document.documentElement).appendChild(style);
+
+  /* 7. 主页滚动位置记忆 */
+  if(IS_HOME){
+    window.addEventListener('load', function(){
+      var saved = parseInt(localStorage.getItem('qilai_scroll_top') || '0', 10);
+      if(saved > 0){ window.scrollTo(0, saved); }
+    });
+    document.addEventListener('click', function(e){
+      var a = e.target.closest ? e.target.closest('a') : null;
+      if(a){ localStorage.setItem('qilai_scroll_top', String(window.scrollY)); }
+    }, true);
+  }
+})();
+
+</script>
+  <script>
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+  
+  document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.keyCode === 27) { saveScrollAndReturn(); }
+  });
+  
+  document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+  
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
