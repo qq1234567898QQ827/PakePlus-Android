@@ -1,0 +1,1399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+    <meta charset="UTF-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>绳波干涉动画 · 坐标轴与分量波</title>
+  <style>
+    :root {
+      --bg: #0b0b14;
+      --panel-bg: #131320;
+      --text: #c8c8d4;
+      --red: #ff4d4d;
+      --blue: #4d8dff;
+      --slider-track: #1e1e30;
+      --border: #2a2a3d;
+      --purple: #c084fc;
+      --yellow: #f0c040;
+      --accent-green: #5cdb8b;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 8px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .container {
+      background: var(--panel-bg);
+      border-radius: 18px;
+      padding: 16px 20px 14px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--border);
+      max-width: 1150px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .title {
+      font-size: 1.4em;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ff5c5c, #ff9494, #5c8dff, #8cb4ff);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 5s ease infinite;
+    }
+    @keyframes gradientShift {
+      0%,
+      100% {
+        background-position: 0% 50%;
+      }
+      50% {
+        background-position: 100% 50%;
+      }
+    }
+    .time-display {
+      font-size: 0.85em;
+      color: #8b8fa0;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      white-space: nowrap;
+    }
+    .time-display span {
+      color: #ff8c8c;
+      font-weight: 600;
+    }
+
+    .canvas-wrapper {
+      background: #06060e;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: inset 0 3px 12px rgba(0, 0, 0, 0.6);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: center;
+    }
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      transition: all 0.25s;
+      white-space: nowrap;
+    }
+    .control-group:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .control-group label {
+      font-size: 0.8em;
+      font-weight: 600;
+      color: #b0b6c0;
+      letter-spacing: 0.3px;
+      min-width: 24px;
+    }
+    .label-red {
+      color: #ff6b6b !important;
+    }
+    .label-blue {
+      color: #6b9fff !important;
+    }
+    .label-speed {
+      color: #7ee0d0 !important;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 80px;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--slider-track);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid #666;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      transition: transform 0.2s;
+    }
+    #ampRedSlider::-webkit-slider-thumb {
+      border-color: #e04848;
+    }
+    #ampBlueSlider::-webkit-slider-thumb {
+      border-color: #4880e0;
+    }
+    #speedSlider::-webkit-slider-thumb {
+      border-color: #48b8a0;
+    }
+
+    .value-badge {
+      display: inline-block;
+      min-width: 36px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.78em;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+    .red-badge {
+      background: rgba(224, 72, 72, 0.13);
+      color: #ff7b7b;
+    }
+    .blue-badge {
+      background: rgba(72, 128, 224, 0.13);
+      color: #7ba8ff;
+    }
+    .speed-badge {
+      background: rgba(72, 184, 160, 0.13);
+      color: #7ee0d0;
+    }
+
+    .btn {
+      padding: 9px 16px;
+      border-radius: 22px;
+      border: none;
+      font-size: 0.82em;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: all 0.25s;
+      white-space: nowrap;
+    }
+    .btn-reset {
+      background: rgba(255, 255, 255, 0.05);
+      color: #c8c8d4;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    .btn-reset:hover {
+      background: rgba(255, 255, 255, 0.11);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+    .btn-pause {
+      background: rgba(240, 190, 60, 0.1);
+      color: #f0c860;
+      border: 1px solid rgba(240, 190, 60, 0.22);
+      min-width: 80px;
+    }
+    .btn-pause:hover {
+      background: rgba(240, 190, 60, 0.18);
+    }
+    .btn-pause.paused {
+      background: rgba(92, 219, 139, 0.13);
+      color: #7eeba0;
+      border-color: rgba(92, 219, 139, 0.28);
+    }
+    .btn-component {
+      background: rgba(180, 180, 210, 0.06);
+      color: #b8b8cc;
+      border: 1px solid rgba(180, 180, 210, 0.18);
+    }
+    .btn-component:hover {
+      background: rgba(180, 180, 210, 0.13);
+    }
+    .btn-component.active {
+      background: rgba(200, 180, 255, 0.16);
+      color: #d0c8ff;
+      border-color: rgba(200, 180, 255, 0.4);
+      box-shadow: 0 0 16px rgba(160, 140, 220, 0.2);
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      font-size: 0.74em;
+      color: #a0a6b0;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .legend-dot.red {
+      background: #ff4444;
+      box-shadow: 0 0 6px #ff4444aa;
+    }
+    .legend-dot.blue {
+      background: #4499ff;
+      box-shadow: 0 0 6px #4499ffaa;
+    }
+    .legend-dot.black {
+      background: #1a1a1a;
+      border: 2px solid #777;
+      box-shadow: 0 0 4px #66666644;
+    }
+    .legend-dot.purple {
+      background: #c084fc;
+      box-shadow: 0 0 8px #c084fccc;
+      width: 13px;
+      height: 13px;
+    }
+    .legend-dot.yellow {
+      background: #f0c040;
+      box-shadow: 0 0 8px #f0c040cc;
+      width: 13px;
+      height: 13px;
+    }
+    .legend-dot.faint-red {
+      background: rgba(255, 100, 100, 0.45);
+      border: 1px dashed rgba(255, 120, 120, 0.6);
+      width: 9px;
+      height: 9px;
+    }
+    .legend-dot.faint-blue {
+      background: rgba(100, 150, 255, 0.45);
+      border: 1px dashed rgba(120, 160, 255, 0.6);
+      width: 9px;
+      height: 9px;
+    }
+
+    .info-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: center;
+      font-size: 0.7em;
+      color: #6a6f7a;
+    }
+    .info-bar span {
+      background: rgba(255, 255, 255, 0.015);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px 8px 8px;
+        gap: 8px;
+      }
+      .title {
+        font-size: 1.15em;
+      }
+      .btn {
+        padding: 7px 12px;
+        font-size: 0.72em;
+      }
+      input[type="range"] {
+        width: 55px;
+      }
+    }
+  </style>
+  <style>
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div><div style="position:fixed;top:0;left:0;right:0;height:34px;line-height:34px;text-align:center;background:linear-gradient(90deg,rgba(15,25,38,0.92),rgba(25,45,65,0.92),rgba(15,25,38,0.92));color:#8fd8ff;font-size:15px;letter-spacing:2px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,0.5);font-family:'PingFang SC','Microsoft YaHei',sans-serif;pointer-events:none;">齐老师动画抖音 35320300542</div>
+  <div class="container">
+    <div class="header">
+      <div class="title">🌊 绳波干涉 · 坐标轴视图</div>
+      <div class="time-display">⏱ 时间：<span id="timeVal">0.00</span> s</div>
+    </div>
+
+    <div class="canvas-wrapper">
+      <canvas id="mainCanvas"></canvas>
+    </div>
+
+    <div class="controls">
+      <div class="control-group">
+        <label class="label-red">🔴 红波</label>
+        <input type="range" id="ampRedSlider" min="10" max="55" value="32" step="1">
+        <span class="value-badge red-badge" id="ampRedVal">32 px</span>
+      </div>
+      <div class="control-group">
+        <label class="label-blue">🔵 蓝波</label>
+        <input type="range" id="ampBlueSlider" min="10" max="55" value="28" step="1">
+        <span class="value-badge blue-badge" id="ampBlueVal">28 px</span>
+      </div>
+      <div class="control-group">
+        <label class="label-speed">⚡ 波速</label>
+        <input type="range" id="speedSlider" min="60" max="360" value="160" step="5">
+        <span class="value-badge speed-badge" id="speedVal">160 px/s</span>
+      </div>
+      <button class="btn btn-component" id="btnComponent" title="切换叠加区是否显示原始波分量">🔍 分量波：关</button>
+      <button class="btn btn-pause" id="btnPause" title="暂停/播放">⏯ 暂停</button>
+      <button class="btn btn-reset" id="btnReset" title="重新开始">🔄 重置</button>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item"><span class="legend-dot red"></span> 红波（左）</div>
+      <div class="legend-item"><span class="legend-dot blue"></span> 蓝波（右）</div>
+      <div class="legend-item"><span class="legend-dot black"></span> 叠加位移</div>
+      <div class="legend-item"><span class="legend-dot purple"></span> 加强点</div>
+      <div class="legend-item"><span class="legend-dot yellow"></span> 减弱点</div>
+      <div class="legend-item"><span class="legend-dot faint-red"></span> 红波分量（淡）</div>
+      <div class="legend-item"><span class="legend-dot faint-blue"></span> 蓝波分量（淡）</div>
+    </div>
+    <div class="info-bar">
+      <span>左波源 ↑ 向上起振（红）</span>
+      <span>右波源 ↓ 向下起振（蓝）</span>
+      <span>相位差 π</span>
+      <span id="infoMeet">相遇时间：-- s</span>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const canvas = document.getElementById('mainCanvas');
+      const ctx = canvas.getContext('2d');
+
+      // DOM 元素
+      const ampRedSlider = document.getElementById('ampRedSlider');
+      const ampBlueSlider = document.getElementById('ampBlueSlider');
+      const speedSlider = document.getElementById('speedSlider');
+      const ampRedValEl = document.getElementById('ampRedVal');
+      const ampBlueValEl = document.getElementById('ampBlueVal');
+      const speedValEl = document.getElementById('speedVal');
+      const timeValEl = document.getElementById('timeVal');
+      const btnPause = document.getElementById('btnPause');
+      const btnReset = document.getElementById('btnReset');
+      const btnComponent = document.getElementById('btnComponent');
+      const infoMeet = document.getElementById('infoMeet');
+
+      // 参数
+      let ampRed = parseInt(ampRedSlider.value);
+      let ampBlue = parseInt(ampBlueSlider.value);
+      let waveSpeed = parseInt(speedSlider.value);
+      let showComponents = false;
+
+      const NUM_PARTICLES = 120;
+      const PARTICLE_RADIUS = 4.5;
+      const SOURCE_RADIUS = 7.2;
+      const SPECIAL_RADIUS = 6.0;
+      const COMPONENT_DOT_RADIUS = 2.8;
+      const FREQUENCY = 0.44; // Hz
+
+      // Canvas 几何
+      let canvasWidth, canvasHeight;
+      let marginLeft, marginRight, marginTop, marginBottom;
+      let plotLeft, plotRight, plotTop, plotBottom;
+      let equilY; // x轴 (平衡位置) 在canvas中的y坐标
+      let totalLength; // 绳子在canvas中的像素长度
+      let dx;
+      let particleX = [];
+
+      // 派生物理量
+      let omega, wavenumber, wavelength;
+
+      // 动画状态
+      let animTime = 0;
+      let paused = false;
+      let lastFrameTimestamp = null;
+
+      // 位移数组
+      let yRed = new Float32Array(NUM_PARTICLES);
+      let yBlue = new Float32Array(NUM_PARTICLES);
+      let yTotal = new Float32Array(NUM_PARTICLES);
+      let redArrived = new Float32Array(NUM_PARTICLES);
+      let blueArrived = new Float32Array(NUM_PARTICLES);
+
+      function updateDerivedParams() {
+        omega = 2 * Math.PI * FREQUENCY;
+        wavelength = waveSpeed / FREQUENCY;
+        wavenumber = (2 * Math.PI) / wavelength;
+        updateMeetInfo();
+      }
+
+      function updateMeetInfo() {
+        if (totalLength > 0 && waveSpeed > 0) {
+          const meetTime = totalLength / (2 * waveSpeed);
+          infoMeet.textContent = `相遇时间：${meetTime.toFixed(2)} s（中点）`;
+        }
+      }
+
+      function setupCanvas() {
+        const wrapper = canvas.parentElement;
+        const wrapperWidth = wrapper.clientWidth;
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvasWidth = Math.min(wrapperWidth - 6, 1120);
+        canvasHeight = Math.round(canvasWidth / 2.8);
+        canvasHeight = Math.max(canvasHeight, 280);
+        canvasHeight = Math.min(canvasHeight, 480);
+
+        canvas.width = canvasWidth * dpr;
+        canvas.height = canvasHeight * dpr;
+        canvas.style.width = canvasWidth + 'px';
+        canvas.style.height = canvasHeight + 'px';
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+
+        // 设置绘图区域边距，为坐标轴留空间
+        marginLeft = 56;
+        marginRight = 36;
+        marginTop = 28;
+        marginBottom = 32;
+
+        plotLeft = marginLeft;
+        plotRight = canvasWidth - marginRight;
+        plotTop = marginTop;
+        plotBottom = canvasHeight - marginBottom;
+
+        equilY = plotTop + (plotBottom - plotTop) * 0.6; // x轴位置偏上，给位移留空间
+        totalLength = plotRight - plotLeft;
+        dx = totalLength / (NUM_PARTICLES - 1);
+
+        particleX = [];
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          particleX[i] = plotLeft + i * dx;
+        }
+        updateDerivedParams();
+      }
+
+      function resetSimulation() {
+        animTime = 0;
+        lastFrameTimestamp = null;
+        yRed.fill(0);
+        yBlue.fill(0);
+        yTotal.fill(0);
+        redArrived.fill(0);
+        blueArrived.fill(0);
+        updateDerivedParams();
+        timeValEl.textContent = '0.00';
+      }
+
+      function computeWaveState(t) {
+        const L = totalLength;
+        const v = waveSpeed;
+        const Ar = ampRed;
+        const Ab = ampBlue;
+        const k = wavenumber;
+        const w = omega;
+
+        const leftFront = v * t;
+        const rightFront = L - v * t;
+
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          const x = particleX[i] - plotLeft;
+          const xFromRight = L - x;
+
+          // 红波 (左)
+          const rArr = (x <= leftFront + 0.01) ? 1 : 0;
+          redArrived[i] = rArr;
+          if (i === 0) {
+            yRed[i] = Ar * Math.sin(w * t);
+          } else if (rArr) {
+            yRed[i] = Ar * Math.sin(w * t - k * x);
+          } else {
+            yRed[i] = 0;
+          }
+
+          // 蓝波 (右，反相)
+          const bArr = (xFromRight <= v * t + 0.01) ? 1 : 0;
+          blueArrived[i] = bArr;
+          if (i === NUM_PARTICLES - 1) {
+            yBlue[i] = -Ab * Math.sin(w * t);
+          } else if (bArr) {
+            yBlue[i] = -Ab * Math.sin(w * t - k * xFromRight);
+          } else {
+            yBlue[i] = 0;
+          }
+
+          // 总位移 (像素值，向下为正，但我们需要向上为正，所以取负)
+          // 计算机图形y轴向下，为符合常规振动方向，让位移向上为正，即减去位移值
+          if (i === 0) yTotal[i] = Ar * Math.sin(w * t);
+          else if (i === NUM_PARTICLES - 1) yTotal[i] = -Ab * Math.sin(w * t);
+          else yTotal[i] = yRed[i] + yBlue[i];
+        }
+      }
+
+      function isStrengthened(i) {
+        if (redArrived[i] < 0.5 || blueArrived[i] < 0.5) return false;
+        const yr = yRed[i], yb = yBlue[i], yt = yTotal[i];
+        return (yr * yb > 0 && Math.abs(yt) > Math.abs(yr) * 1.05 && Math.abs(yt) > Math.abs(yb) * 1.05);
+      }
+
+      function isWeakened(i) {
+        if (redArrived[i] < 0.5 || blueArrived[i] < 0.5) return false;
+        const yr = yRed[i], yb = yBlue[i], yt = yTotal[i];
+        return (yr * yb < 0 && Math.abs(yt) < Math.abs(yr) * 0.9 && Math.abs(yt) < Math.abs(yb) * 0.9);
+      }
+
+      function drawAxes() {
+        ctx.save();
+        // x轴 (平衡位置)
+        ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(plotLeft - 6, equilY);
+        ctx.lineTo(plotRight + 6, equilY);
+        ctx.stroke();
+
+        // x轴箭头
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.moveTo(plotRight + 6, equilY);
+        ctx.lineTo(plotRight - 4, equilY - 3);
+        ctx.lineTo(plotRight - 4, equilY + 3);
+        ctx.closePath();
+        ctx.fill();
+
+        // y轴 (垂直方向，通过左端源点位置)
+        ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(plotLeft, plotTop - 6);
+        ctx.lineTo(plotLeft, plotBottom + 8);
+        ctx.stroke();
+
+        // y轴箭头
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath();
+        ctx.moveTo(plotLeft, plotTop - 8);
+        ctx.lineTo(plotLeft - 3, plotTop - 2);
+        ctx.lineTo(plotLeft + 3, plotTop - 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // 轴标签
+        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.font = 'italic 12px "Segoe UI", "PingFang SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('x (平衡位置)', plotRight - 30, equilY - 12);
+        ctx.save();
+        ctx.translate(plotLeft - 32, plotTop + 50);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('y (振动位移)', 0, 0);
+        ctx.restore();
+
+        // 刻度：y轴刻度 (以像素为单位显示振幅参考)
+        const maxAmp = Math.max(ampRed, ampBlue, 30);
+        const stepY = 20; // 每20px一个刻度
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.font = '9px "SF Mono", "Consolas", monospace';
+        ctx.textAlign = 'right';
+        for (let yMark = equilY; yMark > plotTop + 10; yMark -= stepY) {
+          ctx.beginPath();
+          ctx.moveTo(plotLeft - 4, yMark);
+          ctx.lineTo(plotLeft + 2, yMark);
+          ctx.stroke();
+          const val = equilY - yMark;
+          ctx.fillText('+' + Math.round(val), plotLeft - 8, yMark + 3);
+        }
+        for (let yMark = equilY + stepY; yMark < plotBottom - 10; yMark += stepY) {
+          ctx.beginPath();
+          ctx.moveTo(plotLeft - 4, yMark);
+          ctx.lineTo(plotLeft + 2, yMark);
+          ctx.stroke();
+          const val = equilY - yMark;
+          ctx.fillText(Math.round(val), plotLeft - 8, yMark + 3);
+        }
+
+        // x轴刻度 (位置标记，简单标出两端)
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.textAlign = 'center';
+        ctx.fillText('0', plotLeft, equilY + 16);
+        ctx.fillText(Math.round(totalLength) + ' px', plotRight, equilY + 16);
+
+        // 原点标记
+        ctx.fillStyle = 'rgba(255,255,255,0.5)';
+        ctx.beginPath();
+        ctx.arc(plotLeft, equilY, 2.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.restore();
+      }
+
+      function drawGrid() {
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 0.8;
+        const step = 30;
+        for (let gx = plotLeft + step; gx < plotRight; gx += step) {
+          ctx.beginPath();
+          ctx.moveTo(gx, plotTop);
+          ctx.lineTo(gx, plotBottom);
+          ctx.stroke();
+        }
+        for (let gy = plotTop; gy <= plotBottom; gy += step) {
+          ctx.beginPath();
+          ctx.moveTo(plotLeft, gy);
+          ctx.lineTo(plotRight, gy);
+          ctx.stroke();
+        }
+      }
+
+      function drawWaveFronts(t) {
+        const leftFront = waveSpeed * t;
+        const rightFront = totalLength - waveSpeed * t;
+        const lx = plotLeft + leftFront;
+        const rx = plotLeft + rightFront;
+
+        if (leftFront > 0 && leftFront < totalLength) {
+          ctx.strokeStyle = 'rgba(255,120,120,0.5)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 8]);
+          ctx.beginPath();
+          ctx.moveTo(lx, plotTop - 4);
+          ctx.lineTo(lx, plotBottom + 4);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = 'rgba(255,130,130,0.8)';
+          ctx.font = '10px "PingFang SC", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('←红波波前', lx, plotTop - 8);
+        }
+        if (rightFront > 0 && rightFront < totalLength) {
+          ctx.strokeStyle = 'rgba(120,160,255,0.5)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 8]);
+          ctx.beginPath();
+          ctx.moveTo(rx, plotTop - 4);
+          ctx.lineTo(rx, plotBottom + 4);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = 'rgba(140,175,255,0.8)';
+          ctx.fillText('蓝波波前→', rx, plotTop - 8);
+        }
+
+        if (leftFront >= rightFront - 2 && leftFront < totalLength && rightFront > 0) {
+          const midX = plotLeft + totalLength / 2;
+          const zoneW = Math.max(Math.abs(leftFront - rightFront), 24);
+          ctx.fillStyle = 'rgba(255,255,210,0.04)';
+          ctx.fillRect(midX - zoneW / 2, plotTop, zoneW, plotBottom - plotTop);
+        }
+      }
+
+      function drawRopeLines() {
+        ctx.lineWidth = 1.2;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < NUM_PARTICLES - 1; i++) {
+          const x1 = particleX[i];
+          const y1 = equilY - yTotal[i]; // 向上为正
+          const x2 = particleX[i + 1];
+          const y2 = equilY - yTotal[i + 1];
+
+          const r1 = redArrived[i] > 0.5, b1 = blueArrived[i] > 0.5;
+          const r2 = redArrived[i + 1] > 0.5, b2 = blueArrived[i + 1] > 0.5;
+          const onlyRed = r1 && !b1 && r2 && !b2;
+          const onlyBlue = b1 && !r1 && b2 && !r2;
+          const overlap = r1 && b1 && r2 && b2;
+
+          if (onlyRed) ctx.strokeStyle = 'rgba(255,80,80,0.5)';
+          else if (onlyBlue) ctx.strokeStyle = 'rgba(80,140,255,0.5)';
+          else if (overlap) ctx.strokeStyle = 'rgba(170,170,185,0.4)';
+          else ctx.strokeStyle = 'rgba(140,140,155,0.2)';
+
+          ctx.beginPath();
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+        }
+      }
+
+      function drawComponentDots() {
+        if (!showComponents) return;
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          if (i === 0 || i === NUM_PARTICLES - 1) continue;
+          if (redArrived[i] > 0.5 && blueArrived[i] > 0.5) {
+            const cx = particleX[i];
+            const redY = equilY - yRed[i];
+            const blueY = equilY - yBlue[i];
+            const totalY = equilY - yTotal[i];
+
+            ctx.fillStyle = 'rgba(255,130,130,0.45)';
+            ctx.strokeStyle = 'rgba(255,150,150,0.3)';
+            ctx.lineWidth = 0.7;
+            ctx.setLineDash([2, 3]);
+            ctx.beginPath();
+            ctx.arc(cx, redY, COMPONENT_DOT_RADIUS, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = 'rgba(130,170,255,0.45)';
+            ctx.strokeStyle = 'rgba(150,185,255,0.3)';
+            ctx.setLineDash([2, 3]);
+            ctx.beginPath();
+            ctx.arc(cx, blueY, COMPONENT_DOT_RADIUS, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.strokeStyle = 'rgba(200,200,210,0.18)';
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([1, 4]);
+            ctx.beginPath();
+            ctx.moveTo(cx, redY);
+            ctx.lineTo(cx, totalY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx, blueY);
+            ctx.lineTo(cx, totalY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        }
+      }
+
+      function getParticleType(i) {
+        if (i === 0) return 'source-red';
+        if (i === NUM_PARTICLES - 1) return 'source-blue';
+        const rArr = redArrived[i] > 0.5;
+        const bArr = blueArrived[i] > 0.5;
+        if (!rArr && !bArr) return 'idle';
+        if (rArr && !bArr) return 'red-only';
+        if (bArr && !rArr) return 'blue-only';
+        if (isStrengthened(i)) return 'strengthened';
+        if (isWeakened(i)) return 'weakened';
+        return 'overlap';
+      }
+
+      function drawParticles() {
+        for (let i = 0; i < NUM_PARTICLES; i++) {
+          const cx = particleX[i];
+          const cy = equilY - yTotal[i];
+          const type = getParticleType(i);
+
+          let radius = PARTICLE_RADIUS;
+          let fillColor, strokeColor, glowColor;
+
+          switch (type) {
+            case 'source-red':
+              radius = SOURCE_RADIUS;
+              fillColor = '#ff3d3d';
+              strokeColor = '#ff8080';
+              glowColor = 'rgba(255,50,50,0.7)';
+              break;
+            case 'source-blue':
+              radius = SOURCE_RADIUS;
+              fillColor = '#3d7dff';
+              strokeColor = '#80a8ff';
+              glowColor = 'rgba(50,110,255,0.7)';
+              break;
+            case 'idle':
+              fillColor = '#3a3a3a';
+              strokeColor = '#555';
+              glowColor = null;
+              break;
+            case 'red-only':
+              fillColor = '#ff4d4d';
+              strokeColor = '#ff9090';
+              glowColor = 'rgba(255,70,70,0.3)';
+              break;
+            case 'blue-only':
+              fillColor = '#4d8dff';
+              strokeColor = '#90b8ff';
+              glowColor = 'rgba(70,130,255,0.3)';
+              break;
+            case 'overlap':
+              fillColor = '#151515';
+              strokeColor = '#888';
+              glowColor = null;
+              break;
+            case 'strengthened':
+              radius = SPECIAL_RADIUS;
+              fillColor = '#c084fc';
+              strokeColor = '#ddb8ff';
+              glowColor = 'rgba(185,125,255,0.85)';
+              break;
+            case 'weakened':
+              radius = SPECIAL_RADIUS;
+              fillColor = '#f0c040';
+              strokeColor = '#f8d870';
+              glowColor = 'rgba(240,185,50,0.85)';
+              break;
+            default:
+              fillColor = '#444';
+              strokeColor = '#666';
+              glowColor = null;
+          }
+
+          if (glowColor) {
+            const grad = ctx.createRadialGradient(cx, cy, radius * 0.4, cx, cy, radius * 2.8);
+            grad.addColorStop(0, glowColor);
+            grad.addColorStop(0.6, glowColor.replace('0.85', '0.15').replace('0.7', '0.12').replace('0.3', '0.05'));
+            grad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius * 2.8, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+
+          const mainGrad = ctx.createRadialGradient(cx - radius * 0.25, cy - radius * 0.3, radius * 0.08, cx, cy, radius);
+          mainGrad.addColorStop(0, '#ffffff');
+          mainGrad.addColorStop(0.4, fillColor);
+          mainGrad.addColorStop(1, strokeColor);
+          ctx.fillStyle = mainGrad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.strokeStyle = strokeColor;
+          ctx.lineWidth = 1.1;
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(255,255,255,0.6)';
+          ctx.beginPath();
+          ctx.arc(cx - radius * 0.28, cy - radius * 0.32, radius * 0.3, 0, 2 * Math.PI);
+          ctx.fill();
+        }
+      }
+
+      function drawSourceMarkers() {
+        const lx = particleX[0];
+        const ly = equilY - yTotal[0];
+        ctx.fillStyle = 'rgba(255,70,70,0.9)';
+        ctx.font = 'bold 11px "PingFang SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('波源 L', lx, ly - SOURCE_RADIUS - 14);
+        drawArrow(lx, ly - SOURCE_RADIUS - 4, 'up', '#ff5c5c');
+
+        const rx = particleX[NUM_PARTICLES - 1];
+        const ry = equilY - yTotal[NUM_PARTICLES - 1];
+        ctx.fillStyle = 'rgba(90,150,255,0.9)';
+        ctx.fillText('波源 R', rx, ry - SOURCE_RADIUS - 14);
+        drawArrow(rx, ry - SOURCE_RADIUS - 4, 'down', '#5c8dff');
+      }
+
+      function drawArrow(ax, ay, dir, color) {
+        ctx.fillStyle = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.3;
+        const s = 6;
+        ctx.beginPath();
+        if (dir === 'up') {
+          ctx.moveTo(ax, ay - s);
+          ctx.lineTo(ax - s * 0.6, ay + s * 0.4);
+          ctx.lineTo(ax + s * 0.6, ay + s * 0.4);
+        } else {
+          ctx.moveTo(ax, ay + s);
+          ctx.lineTo(ax - s * 0.6, ay - s * 0.4);
+          ctx.lineTo(ax + s * 0.6, ay - s * 0.4);
+        }
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      function render(t) {
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        drawGrid();
+        drawAxes();
+        computeWaveState(t);
+        drawWaveFronts(t);
+        drawComponentDots();
+        drawRopeLines();
+        drawParticles();
+        drawSourceMarkers();
+      }
+
+      function animate(timestamp) {
+        if (!paused) {
+          if (lastFrameTimestamp !== null) {
+            const dt = Math.min((timestamp - lastFrameTimestamp) / 1000, 0.1);
+            animTime += dt;
+          }
+          lastFrameTimestamp = timestamp;
+        } else {
+          lastFrameTimestamp = null;
+        }
+        timeValEl.textContent = animTime.toFixed(2);
+        render(animTime);
+        requestAnimationFrame(animate);
+      }
+
+      function onParamChange() {
+        ampRed = parseInt(ampRedSlider.value);
+        ampBlue = parseInt(ampBlueSlider.value);
+        waveSpeed = parseInt(speedSlider.value);
+        ampRedValEl.textContent = ampRed + ' px';
+        ampBlueValEl.textContent = ampBlue + ' px';
+        speedValEl.textContent = waveSpeed + ' px/s';
+        updateDerivedParams();
+      }
+
+      ampRedSlider.addEventListener('input', onParamChange);
+      ampBlueSlider.addEventListener('input', onParamChange);
+      speedSlider.addEventListener('input', onParamChange);
+
+      btnPause.addEventListener('click', () => {
+        paused = !paused;
+        btnPause.textContent = paused ? '▶ 播放' : '⏯ 暂停';
+        btnPause.classList.toggle('paused', paused);
+        if (!paused) lastFrameTimestamp = null;
+      });
+
+      btnReset.addEventListener('click', () => {
+        resetSimulation();
+        if (paused) render(0);
+      });
+
+      btnComponent.addEventListener('click', () => {
+        showComponents = !showComponents;
+        btnComponent.textContent = showComponents ? '🔍 分量波：开' : '🔍 分量波：关';
+        btnComponent.classList.toggle('active', showComponents);
+      });
+
+      window.addEventListener('resize', () => {
+        clearTimeout(window.resizeTimer);
+        window.resizeTimer = setTimeout(() => {
+          const wasPaused = paused;
+          paused = true;
+          setupCanvas();
+          updateDerivedParams();
+          render(animTime);
+          if (!wasPaused) {
+            paused = false;
+            lastFrameTimestamp = null;
+          }
+        }, 300);
+      });
+
+      window.addEventListener('keydown', (e) => {
+        if (e.key === ' ') { e.preventDefault(); btnPause.click(); }
+        else if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); btnReset.click(); }
+        else if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); btnComponent.click(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); waveSpeed = Math.max(60, waveSpeed - 10); speedSlider.value = waveSpeed; onParamChange(); }
+        else if (e.key === 'ArrowRight') { e.preventDefault(); waveSpeed = Math.min(360, waveSpeed + 10); speedSlider.value = waveSpeed; onParamChange(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); ampRed = Math.min(55, ampRed + 2); ampRedSlider.value = ampRed; onParamChange(); }
+        else if (e.key === 'ArrowDown') { e.preventDefault(); ampRed = Math.max(10, ampRed - 2); ampRedSlider.value = ampRed; onParamChange(); }
+      });
+
+      setupCanvas();
+      updateDerivedParams();
+      ampRedValEl.textContent = ampRed + ' px';
+      ampBlueValEl.textContent = ampBlue + ' px';
+      speedValEl.textContent = waveSpeed + ' px/s';
+      render(0);
+      requestAnimationFrame(animate);
+
+      console.log('🌊 绳波干涉动画 (带坐标轴) 已启动');
+      console.log('  - 坐标轴：x=平衡位置，y=振动位移');
+      console.log('  - 紫色=加强点，黄色=减弱点');
+      console.log('  - 按C键切换叠加区分量波显示');
+    })();
+  </script>
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<style>
+.back-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 10px 20px;
+    background: rgba(0, 150, 200, 0.3);
+    border: 1px solid #00ffff;
+    color: white;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    z-index: 9999;
+    transition: 0.3s;
+    backdrop-filter: blur(5px);
+}
+.back-btn:hover {
+    background: rgba(0, 150, 200, 0.6);
+    box-shadow: 0 0 15px #00ffff;
+}
+</style>
+<button class="back-btn" onclick="goBack()">⬅️ 返回</button>
+<script>
+function goBack() {
+    history.back();
+}
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        goBack();
+    }
+});
+</script>
+
+
+<div class="watermark">齐老师动画</div>
+<style>
+.watermark {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 14px;
+    color: rgba(0, 255, 255, 0.3);
+    z-index: 9998;
+    pointer-events: none;
+    user-select: none;
+}
+</style>
+
+
+<script>
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    return false;
+});
+</script>
+
+
+<script>
+(function(){
+  var IS_HOME = (location.pathname.split('/').pop() === 'index.html' || location.pathname.split('/').pop() === '');
+
+  /* 1. 禁用右键菜单 */
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); try{ e.returnValue = false; }catch(_){} return false; });
+  /* 2. 鼠标右键按下直接吞掉 */
+  document.addEventListener('mousedown', function(e){ if(e.button === 2){ e.preventDefault(); return false; } });
+  document.addEventListener('mouseup',   function(e){ if(e.button === 2){ e.preventDefault(); return false; } });
+
+  /* 3. 禁用快捷键 */
+  document.addEventListener('keydown', function(e){
+    var k = (e.key || '').toLowerCase();
+    var ctrl = e.ctrlKey || e.metaKey;
+    var blocked = false;
+    /* F12 */
+    if(e.key === 'F12'){ blocked = true; }
+    /* Ctrl+U / S / P / C / V / X */
+    if(ctrl && ['u','s','p','c','v','x'].indexOf(k) >= 0){ blocked = true; }
+    /* Ctrl+Shift+I / J / C */
+    if(ctrl && e.shiftKey && ['i','j','c'].indexOf(k) >= 0){ blocked = true; }
+    if(blocked){ e.preventDefault(); try{ e.returnValue = false; }catch(_){} return false; }
+    /* ESC 返回主页 */
+    if(e.key === 'Escape' && !IS_HOME){
+      location.href = 'index.html';
+    }
+  });
+
+  /* 4. 禁用文本选择（input/textarea 放行） */
+  document.addEventListener('selectstart', function(e){
+    var tag = (e.target.tagName || '').toUpperCase();
+    if(tag !== 'INPUT' && tag !== 'TEXTAREA'){ e.preventDefault(); return false; }
+  });
+  /* 5. 禁用拖拽 */
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); return false; });
+
+  /* 6. 注入 user-select 样式（input/textarea 仍可选） */
+  var style = document.createElement('style');
+  style.textContent = 'body{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;}input,textarea{-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;}img{-webkit-user-drag:none;user-drag:none;}';
+  (document.head || document.documentElement).appendChild(style);
+
+  /* 7. 主页滚动位置记忆 */
+  if(IS_HOME){
+    window.addEventListener('load', function(){
+      var saved = parseInt(localStorage.getItem('qilai_scroll_top') || '0', 10);
+      if(saved > 0){ window.scrollTo(0, saved); }
+    });
+    document.addEventListener('click', function(e){
+      var a = e.target.closest ? e.target.closest('a') : null;
+      if(a){ localStorage.setItem('qilai_scroll_top', String(window.scrollY)); }
+    }, true);
+  }
+})();
+
+</script>
+  <script>
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+  
+  document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.keyCode === 27) { saveScrollAndReturn(); }
+  });
+  
+  document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+  
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
