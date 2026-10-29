@@ -1,0 +1,3281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>高中物理情景作图工具</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:#eef1f6;color:#243043;overflow:hidden;
+  }
+  .app{display:flex;height:100vh;}
+
+  .left{
+    width:196px;flex:0 0 196px;background:#fff;border-right:1px solid #dde3ec;
+    padding:12px 10px;display:flex;flex-direction:column;gap:4px;overflow-y:auto;
+  }
+  .brand{font-size:16px;font-weight:700;letter-spacing:.5px;}
+  .sub{font-size:11px;color:#8a97ab;margin-top:1px;margin-bottom:6px;}
+  .grp{
+    font-size:10.5px;font-weight:700;color:#9aa8bd;letter-spacing:1.2px;
+    margin:8px 0 2px;padding-left:2px;
+  }
+  .tool{
+    display:flex;align-items:center;gap:7px;width:100%;
+    padding:6px 9px;border:1px solid #e3e9f2;border-radius:7px;
+    background:#fbfcfe;color:#2c3a50;font-size:12.5px;
+    cursor:pointer;transition:.14s;font-family:inherit;text-align:left;
+    white-space:nowrap;
+  }
+  .tool:hover{background:#eef5ff;border-color:#a9c8f5;transform:translateX(2px);}
+  .tool:active{transform:translateX(2px) scale(.97);}
+  .tool .ic{font-size:12.5px;width:16px;text-align:center;color:#5b7ba6;flex:0 0 auto;}
+
+  .tool.active{
+    background:#dbeafe !important;
+    border-color:#3b82f6 !important;
+    color:#1e40af !important;
+    font-weight:600;
+    box-shadow:0 0 0 3px rgba(59,130,246,.16);
+  }
+  .tool.active .ic{color:#1e40af;}
+
+  .tool.disabled,
+  .tool:disabled{
+    opacity:0.42;
+    cursor:not-allowed;
+    pointer-events:none;
+    background:#f5f7fa;
+    border-color:#e9eef5;
+  }
+
+  main{
+    flex:1;min-width:0;display:flex;flex-direction:column;
+    padding:14px;overflow:hidden;gap:10px;
+  }
+
+  .canvas-wrap{
+    flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+  #cv{
+    display:block;max-width:100%;max-height:100%;width:auto;height:auto;
+    background:#fff;border-radius:10px;box-shadow:0 8px 30px rgba(31,45,72,.14);
+    touch-action:none;
+  }
+  #cv.brush-cursor{cursor:crosshair;}
+  #cv.eraser-cursor{cursor:cell;}
+
+  .bottom-tools{
+    flex:0 0 auto;display:flex;flex-direction:column;gap:7px;
+    padding:9px 12px;
+    background:#fff;border:1px solid #dde3ec;border-radius:11px;
+    box-shadow:0 3px 12px rgba(31,45,72,.07);
+  }
+  .bt-row{
+    display:flex;gap:7px;justify-content:center;
+    flex-wrap:wrap;align-items:center;
+  }
+  .bt-label{
+    font-size:10.5px;font-weight:700;color:#9aa8bd;letter-spacing:1.2px;
+    margin-right:3px;flex:0 0 auto;
+  }
+  .bottom-tools .tool{
+    width:auto;padding:7px 14px;font-size:13px;border-radius:9px;
+    white-space:nowrap;
+  }
+  .bottom-tools .tool:hover{transform:translateY(-2px);}
+  .bottom-tools .tool:active{transform:translateY(-2px) scale(.97);}
+
+  .bottom-tools .btn{
+    width:auto;padding:7px 16px;font-size:13px;border-radius:9px;
+    font-family:inherit;transition:.14s;white-space:nowrap;
+    border:1px solid #d8dfea;background:#fff;color:#33415a;cursor:pointer;
+  }
+  .bottom-tools .btn:hover{transform:translateY(-2px);background:#f3f6fb;}
+  .bottom-tools .btn:active{transform:translateY(-2px) scale(.97);}
+  .bottom-tools .btn.primary{
+    background:linear-gradient(180deg,#3d8bff,#2b6fe0);
+    border-color:#2b6fe0;color:#fff;font-weight:600;
+    box-shadow:0 3px 10px rgba(43,111,224,.28);
+  }
+  .bottom-tools .btn.primary:hover{filter:brightness(1.06);}
+  .bottom-tools .btn.danger{
+    border-color:#f3cfcc;background:#fff6f5;color:#d9483f;
+  }
+  .bottom-tools .btn.danger:hover{background:#ffeceb;}
+
+  .bottom-tools .chk{
+    display:flex;align-items:center;gap:6px;
+    font-size:13px;color:#2c3a50;cursor:pointer;user-select:none;
+    padding:7px 13px;border:1px solid #e3e9f2;border-radius:9px;
+    background:#fbfcfe;transition:.14s;white-space:nowrap;
+  }
+  .bottom-tools .chk:hover{background:#eef5ff;border-color:#a9c8f5;transform:translateY(-2px);}
+  .bottom-tools .chk input{accent-color:#2b7cff;width:15px;height:15px;cursor:pointer;}
+
+  .divider{
+    width:1px;height:22px;background:#e3e9f2;margin:0 4px;flex:0 0 auto;
+  }
+
+  .right{
+    width:228px;flex:0 0 228px;background:#fff;border-left:1px solid #dde3ec;
+    padding:12px 12px;overflow-y:auto;
+  }
+  .obj-head{
+    display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;
+    margin:2px 0 12px;color:#1f2c40;
+  }
+  .obj-head .dot{
+    width:13px;height:13px;border-radius:50%;
+    box-shadow:0 0 0 2px #fff,0 0 0 3px #e2e8f2;flex:0 0 auto;
+  }
+  .row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+  .row>label{font-size:12.5px;color:#5d6b80;flex:0 0 auto;}
+  .row input[type=number]{
+    width:92px;padding:6px 8px;border:1px solid #dbe2ed;border-radius:7px;
+    font-size:13px;font-family:inherit;color:#25334a;background:#fafcff;outline:none;
+  }
+  .row input[type=number]:focus{border-color:#7fb0f5;background:#fff;box-shadow:0 0 0 3px rgba(43,124,255,.12);}
+  .row input[type=color]{
+    width:54px;height:28px;padding:1px;border:1px solid #dbe2ed;border-radius:7px;
+    background:#fff;cursor:pointer;
+  }
+  .row input[type=text]{
+    width:112px;padding:6px 8px;border:1px solid #dbe2ed;border-radius:7px;
+    font-size:13px;font-family:inherit;color:#25334a;background:#fafcff;outline:none;
+  }
+  .row select{
+    width:112px;padding:6px 6px;border:1px solid #dbe2ed;border-radius:7px;
+    font-size:12.5px;font-family:inherit;color:#25334a;background:#fafcff;outline:none;cursor:pointer;
+  }
+  .hint{font-size:12.5px;color:#9aa6b8;line-height:1.9;text-align:center;margin-top:34px;}
+  .hint b{color:#6b7c94;font-weight:600;}
+  .tip{font-size:12px;color:#2b7cff;background:#eef5ff;border-radius:7px;padding:6px 9px;margin:2px 0 9px;line-height:1.6;white-space:pre-line;}
+  .del{
+    width:100%;margin-top:12px;padding:9px;border-radius:9px;
+    border:1px solid #f3cfcc;background:#fff6f5;color:#d9483f;
+    font-size:13px;font-family:inherit;cursor:pointer;transition:.15s;
+  }
+  .del:hover{background:#ffeceb;}
+</style>
+  <style>
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+<div class="app">
+
+  <aside class="left">
+    <div class="brand">物理作图</div>
+    <div class="sub">高中情景演示工具</div>
+
+    <div class="grp">基础物体</div>
+    <button class="tool" data-add="ball"><span class="ic">⬤</span>小　球</button>
+    <button class="tool" data-add="block"><span class="ic">◼</span>物　块</button>
+    <button class="tool" data-add="cart"><span class="ic">▭</span>小　车</button>
+    <button class="tool" data-add="weight"><span class="ic">▣</span>钩　码</button>
+    <button class="tool" data-add="incline"><span class="ic">◺</span>斜　面</button>
+    <button class="tool" data-add="board"><span class="ic">▬</span>长木板</button>
+    <button class="tool" data-add="belt"><span class="ic">⇄</span>传送带</button>
+
+    <div class="grp">线条与圆弧</div>
+    <button class="tool" data-add="solidLine"><span class="ic">━</span>实线直线</button>
+    <button class="tool" data-add="dashedLine"><span class="ic">┄</span>虚线直线</button>
+    <button class="tool" data-add="arc"><span class="ic">◜</span>圆　弧</button>
+
+    <div class="grp">基本图形</div>
+    <button class="tool" data-add="circleShape"><span class="ic">○</span>圆　形</button>
+    <button class="tool" data-add="squareShape"><span class="ic">□</span>正方形</button>
+    <button class="tool" data-add="rectShape"><span class="ic">▭</span>长方形</button>
+    <button class="tool" data-add="equiTri"><span class="ic">△</span>等边三角形</button>
+    <button class="tool" data-add="rightTri"><span class="ic">◺</span>直角三角形</button>
+    <button class="tool" data-add="ellipseShape"><span class="ic">⬭</span>椭　圆</button>
+    <button class="tool" data-add="parabolaShape"><span class="ic">∪</span>抛物线</button>
+
+    <div class="grp">立体几何（半透明）</div>
+    <button class="tool" data-add="sphere"><span class="ic">◯</span>球　体</button>
+    <button class="tool" data-add="cube"><span class="ic">▢</span>正方体</button>
+    <button class="tool" data-add="cuboid"><span class="ic">▭</span>长方体</button>
+    <button class="tool" data-add="cone"><span class="ic">▲</span>圆　锥</button>
+    <button class="tool" data-add="tetrahedron"><span class="ic">△</span>正四面体</button>
+    <button class="tool" data-add="cylinder"><span class="ic">⬭</span>圆柱体</button>
+
+    <div class="grp">管道与轨道</div>
+    <button class="tool" data-add="pipe"><span class="ic">◯</span>圆管道</button>
+    <button class="tool" data-add="halfGroove"><span class="ic">⌣</span>半圆凹槽</button>
+    <button class="tool" data-add="quarterGroove"><span class="ic">⌜</span>四分之一凹槽</button>
+    <button class="tool" data-add="circleTrack"><span class="ic">◎</span>圆轨道</button>
+    <button class="tool" data-add="halfTrack"><span class="ic">◠</span>半圆轨道</button>
+    <button class="tool" data-add="curvedTrack"><span class="ic">⌒</span>弯曲轨道</button>
+
+    <div class="grp">固定与支撑</div>
+    <button class="tool" data-add="wall"><span class="ic">▮</span>墙　壁</button>
+    <button class="tool" data-add="ground"><span class="ic">▬</span>地　面</button>
+    <button class="tool" data-add="anchor"><span class="ic">⨀</span>固定点</button>
+
+    <div class="grp">场与粒子</div>
+    <button class="tool" data-add="fieldB"><span class="ic">⊗</span>磁　场</button>
+    <button class="tool" data-add="fieldE"><span class="ic">→</span>电　场</button>
+    <button class="tool" data-add="charge"><span class="ic">⊕</span>带电粒子</button>
+
+    <div class="grp">摆</div>
+    <button class="tool" data-add="pendulum"><span class="ic">↯</span>单　摆</button>
+    <button class="tool" data-add="conePendulum"><span class="ic">◎</span>圆锥摆</button>
+
+    <div class="grp">电路元件</div>
+    <button class="tool" data-add="battery"><span class="ic">⌐</span>电源（电池）</button>
+    <button class="tool" data-add="switch"><span class="ic">⚡</span>开　关</button>
+    <button class="tool" data-add="resistor"><span class="ic">□</span>电　阻</button>
+    <button class="tool" data-add="rheostat"><span class="ic">◱</span>滑动变阻器</button>
+    <button class="tool" data-add="bulb"><span class="ic">⊗</span>灯　泡</button>
+    <button class="tool" data-add="ammeter"><span class="ic">Ⓐ</span>电流表</button>
+    <button class="tool" data-add="voltmeter"><span class="ic">Ⓥ</span>电压表</button>
+    <button class="tool" data-add="wire"><span class="ic">─</span>导　线</button>
+    <button class="tool" data-add="groundSym"><span class="ic">⏚</span>接　地</button>
+    <button class="tool" data-add="capacitor"><span class="ic">||</span>电　容</button>
+    <button class="tool" data-add="inductor"><span class="ic">◡◡</span>电　感</button>
+    <button class="tool" data-add="diode"><span class="ic">▷|</span>二极管</button>
+    <button class="tool" data-add="multimeter"><span class="ic">◎</span>多用电表</button>
+  </aside>
+
+  <main>
+    <div class="canvas-wrap">
+      <canvas id="cv"></canvas>
+    </div>
+
+    <div class="bottom-tools">
+      <div class="bt-row">
+        <button class="tool" id="nextPageBtn"><span class="ic">＋</span>下一页</button>
+        <button class="tool" id="undoBtn" disabled><span class="ic">↶</span>撤　回</button>
+        <button class="tool" data-add="rope"><span class="ic">∿</span>轻　绳</button>
+        <button class="tool" data-add="rod"><span class="ic">▮</span>轻　杆</button>
+        <button class="tool" data-add="spring"><span class="ic">≋</span>弹　簧</button>
+        <label class="chk"><input type="checkbox" id="snapChk"> 网格吸附</label>
+        <button class="tool" data-add="arrow"><span class="ic">↗</span>箭　头</button>
+        <button class="tool" id="brushBtn"><span class="ic">✎</span>毛　笔</button>
+        <button class="tool" id="eraserBtn"><span class="ic">⌫</span>橡皮擦</button>
+      </div>
+      <div class="bt-row">
+        <button class="tool" id="redoBtn" disabled><span class="ic">↷</span>恢　复</button>
+        <button class="tool" id="prevPageBtn" disabled><span class="ic">－</span>上一页</button>
+        <button class="tool" data-add="axes2D"><span class="ic">⊹</span>二维坐标轴</button>
+        <button class="tool" data-add="axes1D"><span class="ic">→</span>一维坐标轴</button>
+        <button class="btn primary" id="exportBtn">导出图片</button>
+        <button class="btn danger" id="clearBtn">清空画布</button>
+        <span class="divider"></span>
+        <button class="tool" data-add="label"><span class="ic">A</span>文字标注</button>
+        <span class="divider"></span>
+        <label class="chk"><input type="checkbox" id="gridChk" checked> 显示网格</label>
+      </div>
+    </div>
+  </main>
+
+  <aside class="right">
+    <div class="grp" style="margin-top:0;">属性面板</div>
+    <div id="props"></div>
+  </aside>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const W = 1000, H = 660, SCALE = 2, GRID = 20;
+const MAX_INCLINE_H = 520;
+const MAX_HISTORY = 60;
+
+const cv  = document.getElementById('cv');
+cv.width  = W * SCALE;
+cv.height = H * SCALE;
+const ctx = cv.getContext('2d');
+
+const propBox   = document.getElementById('props');
+const brushBtn  = document.getElementById('brushBtn');
+const eraserBtn = document.getElementById('eraserBtn');
+const undoBtn   = document.getElementById('undoBtn');
+const redoBtn   = document.getElementById('redoBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+const prevPageBtn = document.getElementById('prevPageBtn');
+
+const NAMES = {
+  ball:'小球', block:'物块', cart:'小车', weight:'钩码',
+  incline:'斜面', board:'长木板', belt:'传送带',
+  sphere:'球体', cube:'正方体', cuboid:'长方体',
+  cone:'圆锥', tetrahedron:'正四面体', cylinder:'圆柱体',
+  rope:'轻绳', rod:'轻杆', spring:'弹簧', pulley:'滑轮',
+  lever:'杠杆', arrow:'箭头',
+  solidLine:'实线直线', dashedLine:'虚线直线', arc:'圆弧',
+  circleShape:'圆形', squareShape:'正方形', rectShape:'长方形',
+  equiTri:'等边三角形', rightTri:'直角三角形',
+  ellipseShape:'椭圆', parabolaShape:'抛物线',
+  pipe:'圆管道', halfGroove:'半圆凹槽', quarterGroove:'四分之一凹槽',
+  circleTrack:'圆轨道', halfTrack:'半圆轨道', curvedTrack:'弯曲轨道',
+  wall:'墙壁', ground:'地面', anchor:'固定点',
+  field:'场', charge:'带电粒子',
+  pendulum:'单摆', conePendulum:'圆锥摆', label:'文字标注',
+  axes2D:'二维坐标轴', axes1D:'一维坐标轴',
+  battery:'电源（电池）', switch:'开关', resistor:'电阻',
+  rheostat:'滑动变阻器', bulb:'灯泡', ammeter:'电流表',
+  voltmeter:'电压表', wire:'导线', groundSym:'接地',
+  capacitor:'电容', inductor:'电感', diode:'二极管',
+  multimeter:'多用电表'
+};
+
+const SEG_TYPES = { arrow:1, rope:1, rod:1, spring:1,
+                    solidLine:1, dashedLine:1 };
+const LOW_PRIORITY = { pipe:1, halfGroove:1, quarterGroove:1,
+                       circleTrack:1, halfTrack:1 };
+const ROTATABLE = { circleShape:1, squareShape:1, rectShape:1,
+                    equiTri:1, rightTri:1, ellipseShape:1, parabolaShape:1 };
+
+const labelFont = fs =>
+  `${fs}px -apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif`;
+
+let objects = [];
+let selected = null;
+let drag = null;
+let uid = 1;
+let spawnN = 0;
+let showGrid = true;
+let snapGrid = false;
+
+/* 毛笔 / 橡皮擦状态 */
+let brushMode = false;
+let eraserMode = false;
+let currentStroke = null;
+let strokes = [];
+let eraserDragging = false;
+
+const BRUSH_DEFAULT = { color:'#1e293b', lw:4 };
+const ERASER_RADIUS = 20;
+
+/* ============ 多页面 ============ */
+let pages = [];
+let currentPageIndex = 0;
+
+function saveCurrentPage(){
+  pages[currentPageIndex] = {
+    objects: JSON.parse(JSON.stringify(objects)),
+    strokes: JSON.parse(JSON.stringify(strokes)),
+    history: history.slice(),
+    redoStack: redoStack.slice()
+  };
+}
+
+function loadPage(index){
+  currentPageIndex = index;
+  const page = pages[index];
+
+  objects = JSON.parse(JSON.stringify(page.objects || []));
+  strokes = JSON.parse(JSON.stringify(page.strokes || []));
+  history = (page.history || []).slice();
+  redoStack = (page.redoStack || []).slice();
+
+  brushMode = false;
+  eraserMode = false;
+  brushBtn.classList.remove('active');
+  eraserBtn.classList.remove('active');
+  cv.classList.remove('brush-cursor', 'eraser-cursor');
+
+  selected = null;
+  drag = null;
+  currentStroke = null;
+  eraserDragging = false;
+  dragStartSnapshot = null;
+
+  buildProps();
+  updateUndoRedoBtns();
+  updatePageBtns();
+}
+
+function updatePageBtns(){
+  if(prevPageBtn){
+    const disabled = currentPageIndex <= 0;
+    prevPageBtn.disabled = disabled;
+    prevPageBtn.classList.toggle('disabled', disabled);
+  }
+}
+
+nextPageBtn.addEventListener('click', ()=>{
+  saveCurrentPage();
+  pages.push({
+    objects: [],
+    strokes: [],
+    history: [],
+    redoStack: []
+  });
+  loadPage(pages.length - 1);
+});
+
+prevPageBtn.addEventListener('click', ()=>{
+  if(currentPageIndex <= 0) return;
+  saveCurrentPage();
+  loadPage(currentPageIndex - 1);
+});
+
+/* ============ 历史记录（撤回 + 恢复） ============ */
+let history = [];
+let redoStack = [];
+let dragStartSnapshot = null;
+
+function cloneState(){
+  return {
+    objects: JSON.parse(JSON.stringify(objects)),
+    strokes: JSON.parse(JSON.stringify(strokes))
+  };
+}
+
+function restoreState(snap){
+  objects = JSON.parse(JSON.stringify(snap.objects));
+  strokes = JSON.parse(JSON.stringify(snap.strokes));
+  selected = null;
+  drag = null;
+  currentStroke = null;
+  eraserDragging = false;
+  dragStartSnapshot = null;
+  buildProps();
+}
+
+function pushHistory(snap){
+  history.push(snap);
+  if(history.length > MAX_HISTORY) history.shift();
+  redoStack = [];
+  updateUndoRedoBtns();
+}
+
+function saveSnapshot(){
+  pushHistory(cloneState());
+}
+
+function undo(){
+  if(history.length === 0) return;
+  const snap = history.pop();
+  redoStack.push(cloneState());
+  restoreState(snap);
+  updateUndoRedoBtns();
+}
+
+function redo(){
+  if(redoStack.length === 0) return;
+  const snap = redoStack.pop();
+  history.push(cloneState());
+  if(history.length > MAX_HISTORY) history.shift();
+  restoreState(snap);
+  updateUndoRedoBtns();
+}
+
+function updateUndoRedoBtns(){
+  if(undoBtn){
+    const empty = history.length === 0;
+    undoBtn.disabled = empty;
+    undoBtn.classList.toggle('disabled', empty);
+  }
+  if(redoBtn){
+    const empty = redoStack.length === 0;
+    redoBtn.disabled = empty;
+    redoBtn.classList.toggle('disabled', empty);
+  }
+}
+
+undoBtn.addEventListener('click', undo);
+redoBtn.addEventListener('click', redo);
+
+/* ====================== 颜色工具 ====================== */
+function hexToRgb(hex){
+  hex = String(hex).replace('#','');
+  if(hex.length === 3) hex = hex.split('').map(c=>c+c).join('');
+  return [parseInt(hex.substr(0,2),16), parseInt(hex.substr(2,2),16), parseInt(hex.substr(4,2),16)];
+}
+function rgbStr(r,g,b){ return `rgb(${r|0},${g|0},${b|0})`; }
+function lighten(hex,t){
+  const [r,g,b] = hexToRgb(hex);
+  return rgbStr(r+(255-r)*t, g+(255-g)*t, b+(255-b)*t);
+}
+function darken(hex,t){
+  const [r,g,b] = hexToRgb(hex);
+  return rgbStr(r*(1-t), g*(1-t), b*(1-t));
+}
+function alpha(color,a){
+  if(typeof color === 'string' && color.trim().startsWith('rgb')){
+    const m = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+    if(m) return `rgba(${m[1]},${m[2]},${m[3]},${a})`;
+  }
+  const [r,g,b] = hexToRgb(color);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ====================== 几何工具 ====================== */
+function roundRectPath(x,y,w,h,r){
+  r = Math.max(0, Math.min(r, Math.abs(w)/2, Math.abs(h)/2));
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+}
+function pointInTriangle(px,py, ax,ay, bx,by, cx,cy){
+  const d1 = (px-bx)*(ay-by) - (ax-bx)*(py-by);
+  const d2 = (px-cx)*(by-cy) - (bx-cx)*(py-cy);
+  const d3 = (px-ax)*(cy-ay) - (cx-ax)*(py-ay);
+  const neg = d1<0 || d2<0 || d3<0;
+  const pos = d1>0 || d2>0 || d3>0;
+  return !(neg && pos);
+}
+function distToSeg(px,py, x1,y1,x2,y2){
+  const dx = x2-x1, dy = y2-y1;
+  const L2 = dx*dx + dy*dy;
+  if(L2 === 0) return Math.hypot(px-x1, py-y1);
+  let t = ((px-x1)*dx + (py-y1)*dy) / L2;
+  t = Math.max(0, Math.min(1, t));
+  return Math.hypot(px - (x1+t*dx), py - (y1+t*dy));
+}
+
+/* ====================== 旋转图形辅助 ====================== */
+function getCenter(o){ return { cx: o.x + o.w/2, cy: o.y + o.h/2 }; }
+function sampleOutline(o){
+  const pts = [];
+  const w = o.w, h = o.h;
+  switch(o.type){
+    case 'circleShape': {
+      const r = Math.min(w,h)/2;
+      for(let i=0;i<32;i++){
+        const a = i/32*Math.PI*2;
+        pts.push([Math.cos(a)*r, Math.sin(a)*r]);
+      }
+      break;
+    }
+    case 'squareShape':
+    case 'rectShape':
+      pts.push([-w/2,-h/2],[w/2,-h/2],[w/2,h/2],[-w/2,h/2]);
+      break;
+    case 'equiTri':
+      pts.push([0,-h/2],[-w/2,h/2],[w/2,h/2]);
+      break;
+    case 'rightTri':
+      pts.push([-w/2,h/2],[w/2,h/2],[-w/2,-h/2]);
+      break;
+    case 'ellipseShape': {
+      const rx = w/2, ry = h/2;
+      for(let i=0;i<32;i++){
+        const a = i/32*Math.PI*2;
+        pts.push([Math.cos(a)*rx, Math.sin(a)*ry]);
+      }
+      break;
+    }
+    case 'parabolaShape': {
+      const n = 24;
+      for(let i=0;i<=n;i++){
+        const lx = -w/2 + i/n*w;
+        const ly = h/2 - Math.pow(lx/(w/2), 2) * h;
+        pts.push([lx, ly]);
+      }
+      break;
+    }
+  }
+  return pts;
+}
+function getRotatedBBox(o){
+  const { cx, cy } = getCenter(o);
+  const rot = (o.rot||0) * Math.PI/180;
+  const cos = Math.cos(rot), sin = Math.sin(rot);
+  const pts = sampleOutline(o);
+  let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+  for(const [lx, ly] of pts){
+    const rx = lx*cos - ly*sin;
+    const ry = lx*sin + ly*cos;
+    const x = cx + rx, y = cy + ry;
+    if(x<minX) minX=x;
+    if(y<minY) minY=y;
+    if(x>maxX) maxX=x;
+    if(y>maxY) maxY=y;
+  }
+  const pad = 8;
+  return { x:minX-pad, y:minY-pad,
+           w:maxX-minX+pad*2, h:maxY-minY+pad*2 };
+}
+function pointInLocalShape(o, lx, ly){
+  const w = o.w, h = o.h;
+  switch(o.type){
+    case 'circleShape': {
+      const r = Math.min(w,h)/2;
+      return lx*lx + ly*ly <= r*r;
+    }
+    case 'squareShape':
+    case 'rectShape':
+      return Math.abs(lx) <= w/2 && Math.abs(ly) <= h/2;
+    case 'equiTri':
+      return pointInTriangle(lx, ly, 0,-h/2, -w/2,h/2, w/2,h/2);
+    case 'rightTri':
+      return pointInTriangle(lx, ly, -w/2,h/2, w/2,h/2, -w/2,-h/2);
+    case 'ellipseShape': {
+      const rx = w/2, ry = h/2;
+      return Math.pow(lx/rx, 2) + Math.pow(ly/ry, 2) <= 1;
+    }
+    case 'parabolaShape': {
+      const n = 24;
+      let prev = null;
+      let minD = Infinity;
+      for(let i=0;i<=n;i++){
+        const px = -w/2 + i/n*w;
+        const py = h/2 - Math.pow(px/(w/2), 2) * h;
+        if(prev){
+          const d = distToSeg(lx, ly, prev[0], prev[1], px, py);
+          if(d < minD) minD = d;
+        }
+        prev = [px, py];
+      }
+      return minD <= Math.max(12, (o.lw||3) + 8);
+    }
+  }
+  return false;
+}
+function hitTestRotatedShape(o, px, py){
+  const { cx, cy } = getCenter(o);
+  const rot = -(o.rot||0) * Math.PI/180;
+  const dx = px - cx, dy = py - cy;
+  const lx = dx*Math.cos(rot) - dy*Math.sin(rot);
+  const ly = dx*Math.sin(rot) + dy*Math.cos(rot);
+  return pointInLocalShape(o, lx, ly);
+}
+
+/* ====================== 包围盒 ====================== */
+function getBBox(o){
+  if(ROTATABLE[o.type]) return getRotatedBBox(o);
+  switch(o.type){
+    case 'arrow': case 'rope': case 'rod': case 'spring':
+    case 'solidLine': case 'dashedLine':
+      return { x:Math.min(o.x,o.x2), y:Math.min(o.y,o.y2),
+               w:Math.abs(o.x2-o.x), h:Math.abs(o.y2-o.y) };
+    case 'label': {
+      ctx.save(); ctx.font = labelFont(o.fs);
+      const tw = ctx.measureText(o.text).width;
+      ctx.restore();
+      return { x:o.x, y:o.y, w:tw, h:o.fs*1.3 };
+    }
+    case 'pipe': case 'pulley': case 'halfGroove': case 'quarterGroove':
+    case 'circleTrack': case 'halfTrack': case 'anchor':
+      return { x:o.x, y:o.y, w:o.r*2, h:o.r*2 };
+    case 'cube': case 'cuboid': {
+      const d = o.depth || 28;
+      return { x:o.x, y:o.y - d, w:o.w + d, h:o.h + d };
+    }
+    case 'pendulum': case 'conePendulum': {
+      const ang = (o.tilt||0) * Math.PI/180;
+      const bx = o.x + Math.sin(ang) * o.len;
+      const by = o.y + Math.cos(ang) * o.len;
+      const minX = Math.min(o.x, bx - o.r);
+      const maxX = Math.max(o.x, bx + o.r);
+      const minY = Math.min(o.y, by - o.r);
+      const maxY = Math.max(o.y, by + o.r);
+      return { x:minX, y:minY, w:maxX-minX, h:maxY-minY };
+    }
+    case 'axes2D':
+      return { x:o.x - 14, y:o.y - o.h - 22, w:o.w + 42, h:o.h + 42 };
+    case 'axes1D':
+      return { x:o.x - 26, y:o.y - 14, w:o.w + 50, h:28 };
+    case 'arc': {
+      const startRad = o.startAngle * Math.PI/180;
+      const endRad = o.endAngle * Math.PI/180;
+      const n = 24;
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for(let i = 0; i <= n; i++){
+        const a = startRad + (endRad - startRad) * i / n;
+        const px = o.x + Math.cos(a) * o.r;
+        const py = o.y + Math.sin(a) * o.r;
+        if(px < minX) minX = px;
+        if(px > maxX) maxX = px;
+        if(py < minY) minY = py;
+        if(py > maxY) maxY = py;
+      }
+      const pad = o.lw/2 + 2;
+      return { x: minX - pad, y: minY - pad,
+               w: Math.max(1, maxX - minX + pad*2),
+               h: Math.max(1, maxY - minY + pad*2) };
+    }
+    default:
+      return { x:o.x, y:o.y, w:o.w, h:o.h };
+  }
+}
+
+/* ====================== 基本图形绘制 ====================== */
+function drawCircleShape(o){
+  const { cx, cy } = getCenter(o);
+  const r = Math.min(o.w, o.h)/2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((o.rot||0) * Math.PI/180);
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI*2);
+  ctx.fillStyle = alpha(o.color, 0.14);
+  ctx.fill();
+  ctx.lineWidth = o.lw || 3;
+  ctx.strokeStyle = o.color;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(r, 0);
+  ctx.lineWidth = (o.lw || 3) * 0.55;
+  ctx.strokeStyle = alpha(o.color, 0.55);
+  ctx.setLineDash([6, 4]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+function drawSquareShape(o){ drawRectShape(o); }
+function drawRectShape(o){
+  const { cx, cy } = getCenter(o);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((o.rot||0) * Math.PI/180);
+  ctx.beginPath();
+  ctx.rect(-o.w/2, -o.h/2, o.w, o.h);
+  ctx.fillStyle = alpha(o.color, 0.14);
+  ctx.fill();
+  ctx.lineWidth = o.lw || 3;
+  ctx.strokeStyle = o.color;
+  ctx.stroke();
+  ctx.restore();
+}
+function drawEquiTri(o){
+  const { cx, cy } = getCenter(o);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((o.rot||0) * Math.PI/180);
+  ctx.beginPath();
+  ctx.moveTo(0, -o.h/2);
+  ctx.lineTo(-o.w/2, o.h/2);
+  ctx.lineTo(o.w/2, o.h/2);
+  ctx.closePath();
+  ctx.fillStyle = alpha(o.color, 0.14);
+  ctx.fill();
+  ctx.lineWidth = o.lw || 3;
+  ctx.strokeStyle = o.color;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+function drawRightTri(o){
+  const { cx, cy } = getCenter(o);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((o.rot||0) * Math.PI/180);
+  ctx.beginPath();
+  ctx.moveTo(-o.w/2, o.h/2);
+  ctx.lineTo(o.w/2, o.h/2);
+  ctx.lineTo(-o.w/2, -o.h/2);
+  ctx.closePath();
+  ctx.fillStyle = alpha(o.color, 0.14);
+  ctx.fill();
+  ctx.lineWidth = o.lw || 3;
+  ctx.strokeStyle = o.color;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  const s = Math.min(16, o.w*0.2, o.h*0.2);
+  ctx.beginPath();
+  ctx.moveTo(-o.w/2 + s, o.h/2);
+  ctx.lineTo(-o.w/2 + s, o.h/2 - s);
+  ctx.lineTo(-o.w/2, o.h/2 - s);
+  ctx.lineWidth = 1.8;
+  ctx.strokeStyle = alpha(o.color, 0.85);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawEllipseShape(o){
+  const { cx, cy } = getCenter(o);
+  const rx = o.w/2, ry = o.h/2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((o.rot||0) * Math.PI/180);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle = alpha(o.color, 0.14);
+  ctx.fill();
+  ctx.lineWidth = o.lw || 3;
+  ctx.strokeStyle = o.color;
+  ctx.stroke();
+  ctx.restore();
+}
+function drawParabolaShape(o){
+  const { cx, cy } = getCenter(o);
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate((o.rot||0) * Math.PI/180);
+  const w = o.w, h = o.h;
+  ctx.beginPath();
+  const n = 44;
+  for(let i = 0; i <= n; i++){
+    const lx = -w/2 + i/n*w;
+    const ly = h/2 - Math.pow(lx/(w/2), 2) * h;
+    if(i === 0) ctx.moveTo(lx, ly);
+    else        ctx.lineTo(lx, ly);
+  }
+  ctx.lineWidth = o.lw || 3;
+  ctx.strokeStyle = o.color;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(0, h/2, 3.5, 0, Math.PI*2);
+  ctx.fillStyle = o.color;
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ====================== 立体几何 ====================== */
+function drawSphere(o){
+  const r = o.w/2, cx = o.x + r, cy = o.y + r;
+  const op = (o.opacity !== undefined) ? o.opacity : 0.4;
+  const g = ctx.createRadialGradient(cx - r*0.32, cy - r*0.32, r*0.05, cx, cy, r);
+  g.addColorStop(0,   alpha(lighten(o.color, 0.55), Math.min(1, op * 0.85)));
+  g.addColorStop(0.6, alpha(o.color, op));
+  g.addColorStop(1,   alpha(darken(o.color, 0.25), Math.min(1, op * 1.15)));
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = alpha(darken(o.color, 0.35), 0.9);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx - r*0.34, cy - r*0.34, r*0.16, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.fill();
+}
+function drawBoxShape(o){
+  const {x, y, w, h} = o;
+  const d = (o.depth !== undefined) ? o.depth : 28;
+  const op = (o.opacity !== undefined) ? o.opacity : 0.4;
+  const strokeCol = alpha(darken(o.color, 0.38), 0.9);
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x + d, y - d);
+  ctx.lineTo(x + w + d, y - d);
+  ctx.lineTo(x + w, y);
+  ctx.closePath();
+  ctx.fillStyle = alpha(lighten(o.color, 0.35), op);
+  ctx.fill();
+  ctx.strokeStyle = strokeCol;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + w, y);
+  ctx.lineTo(x + w + d, y - d);
+  ctx.lineTo(x + w + d, y + h - d);
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+  ctx.fillStyle = alpha(darken(o.color, 0.14), op);
+  ctx.fill();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.rect(x, y, w, h);
+  ctx.fillStyle = alpha(o.color, op);
+  ctx.fill();
+  ctx.stroke();
+}
+function drawConeShape(o){
+  const {x, y, w, h} = o;
+  const cx = x + w/2;
+  const rx = w/2;
+  const ry = Math.min(w * 0.18, h * 0.14);
+  const apexY = y;
+  const baseY = y + h;
+  const op = (o.opacity !== undefined) ? o.opacity : 0.4;
+  const strokeCol = alpha(darken(o.color, 0.38), 0.9);
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.ellipse(cx, baseY, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle = alpha(darken(o.color, 0.16), op);
+  ctx.fill();
+  ctx.strokeStyle = strokeCol;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx, apexY);
+  ctx.lineTo(x, baseY);
+  ctx.ellipse(cx, baseY, rx, ry, 0, Math.PI, 0, true);
+  ctx.closePath();
+  ctx.fillStyle = alpha(lighten(o.color, 0.18), op);
+  ctx.fill();
+  ctx.strokeStyle = strokeCol;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, apexY, 2.5, 0, Math.PI*2);
+  ctx.fillStyle = alpha(darken(o.color, 0.42), 0.9);
+  ctx.fill();
+}
+function drawTetrahedron(o){
+  const {x, y, w, h} = o;
+  const cx = x + w/2;
+  const op = (o.opacity !== undefined) ? o.opacity : 0.4;
+  const strokeCol = alpha(darken(o.color, 0.38), 0.9);
+  const A = { x: cx,            y: y           };
+  const B = { x: x,             y: y + h       };
+  const C = { x: x + w,         y: y + h       };
+  const D = { x: cx + w * 0.10, y: y + h * 0.46 };
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(B.x, B.y);
+  ctx.lineTo(C.x, C.y);
+  ctx.closePath();
+  ctx.fillStyle = alpha(o.color, op);
+  ctx.fill();
+  ctx.strokeStyle = strokeCol;
+  ctx.stroke();
+  ctx.strokeStyle = alpha(darken(o.color, 0.48), 0.8);
+  ctx.lineWidth = 1.8;
+  [A, B, C].forEach(P => {
+    ctx.beginPath();
+    ctx.moveTo(D.x, D.y);
+    ctx.lineTo(P.x, P.y);
+    ctx.stroke();
+  });
+  ctx.beginPath();
+  ctx.arc(D.x, D.y, 2.5, 0, Math.PI*2);
+  ctx.fillStyle = alpha(darken(o.color, 0.52), 0.9);
+  ctx.fill();
+}
+function drawCylinder(o){
+  const {x, y, w, h} = o;
+  const cx = x + w/2;
+  const rx = w/2;
+  const ry = Math.min(w * 0.18, h * 0.14);
+  const topY = y + ry;
+  const botY = y + h - ry;
+  const op = (o.opacity !== undefined) ? o.opacity : 0.4;
+  const strokeCol = alpha(darken(o.color, 0.38), 0.9);
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.ellipse(cx, botY, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle = alpha(darken(o.color, 0.16), op);
+  ctx.fill();
+  ctx.strokeStyle = strokeCol;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, topY);
+  ctx.lineTo(x, botY);
+  ctx.ellipse(cx, botY, rx, ry, 0, Math.PI, 0, true);
+  ctx.lineTo(x + w, topY);
+  ctx.closePath();
+  ctx.fillStyle = alpha(lighten(o.color, 0.12), op);
+  ctx.fill();
+  ctx.strokeStyle = strokeCol;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(cx, topY, rx, ry, 0, 0, Math.PI*2);
+  ctx.fillStyle = alpha(lighten(o.color, 0.32), op);
+  ctx.fill();
+  ctx.strokeStyle = strokeCol;
+  ctx.stroke();
+}
+
+/* ====================== 其他绘制函数 ====================== */
+function drawBall(o){
+  const r = o.w/2, cx = o.x+r, cy = o.y+r;
+  const g = ctx.createRadialGradient(cx-r*0.36, cy-r*0.36, r*0.05, cx, cy, r);
+  g.addColorStop(0, lighten(o.color, 0.78));
+  g.addColorStop(0.55, o.color);
+  g.addColorStop(1, darken(o.color, 0.22));
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.42); ctx.stroke();
+}
+function drawBlock(o){
+  roundRectPath(o.x, o.y, o.w, o.h, 6);
+  const g = ctx.createLinearGradient(o.x, o.y, o.x, o.y+o.h);
+  g.addColorStop(0, lighten(o.color, 0.34));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.4); ctx.stroke();
+}
+function drawCart(o){
+  const {x, y, w, h} = o;
+  const rw = Math.min(h*0.22, w*0.14);
+  const bodyH = h - rw*2;
+  const bodyY = y;
+  roundRectPath(x, bodyY, w, bodyH, 6);
+  const g = ctx.createLinearGradient(x, bodyY, x, bodyY+bodyH);
+  g.addColorStop(0, lighten(o.color, 0.4));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.4); ctx.stroke();
+  const wy = bodyY + bodyH + rw;
+  [x + rw*2.2, x + w - rw*2.2].forEach(cx=>{
+    ctx.beginPath(); ctx.arc(cx, wy, rw, 0, Math.PI*2);
+    ctx.fillStyle = '#2f3542'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#111'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, wy, rw*0.32, 0, Math.PI*2);
+    ctx.fillStyle = '#9ca3af'; ctx.fill();
+  });
+}
+function drawWeight(o){
+  const {x, y, w, h} = o;
+  const cx = x + w/2;
+  ctx.beginPath();
+  ctx.arc(cx, y + h*0.1, w*0.13, 0, Math.PI*2);
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = darken(o.color, 0.45);
+  ctx.stroke();
+  const bodyY = y + h*0.2;
+  const bodyH = h*0.8;
+  roundRectPath(x, bodyY, w, bodyH, 6);
+  const g = ctx.createLinearGradient(x, bodyY, x, bodyY+bodyH);
+  g.addColorStop(0, lighten(o.color, 0.5));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.42); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x+8, bodyY+7);
+  ctx.lineTo(x+w-8, bodyY+7);
+  ctx.strokeStyle = alpha('#ffffff', 0.45);
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+function drawIncline(o){
+  const ax = o.x+o.w, ay = o.y;
+  const bx = o.x+o.w, by = o.y+o.h;
+  const cx = o.x,     cy = o.y+o.h;
+  ctx.beginPath();
+  ctx.moveTo(cx,cy); ctx.lineTo(bx,by); ctx.lineTo(ax,ay);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(cx,cy, ax,ay);
+  g.addColorStop(0, lighten(o.color, 0.48));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2.5; ctx.lineJoin = 'round';
+  ctx.strokeStyle = darken(o.color, 0.36); ctx.stroke();
+  const s = Math.min(15, o.w*0.14, o.h*0.14);
+  ctx.beginPath();
+  ctx.moveTo(bx-s, by); ctx.lineTo(bx-s, by-s); ctx.lineTo(bx, by-s);
+  ctx.lineWidth = 1.5; ctx.strokeStyle = darken(o.color, 0.52); ctx.stroke();
+  const rad = Math.atan2(o.h, o.w);
+  const ar = Math.min(46, o.w*0.22, o.h*0.42);
+  if(ar > 12){
+    ctx.beginPath();
+    ctx.arc(cx, cy, ar, -rad, 0, false);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = darken(o.color, 0.55);
+    ctx.stroke();
+    ctx.save();
+    ctx.font = '11px system-ui,sans-serif';
+    ctx.fillStyle = darken(o.color, 0.6);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillText((rad*180/Math.PI).toFixed(0)+'°', cx+ar*0.72, cy-ar*0.3);
+    ctx.restore();
+  }
+}
+function drawBoard(o){
+  roundRectPath(o.x, o.y, o.w, o.h, Math.min(6, o.h/2));
+  const g = ctx.createLinearGradient(o.x, o.y, o.x, o.y+o.h);
+  g.addColorStop(0, lighten(o.color, 0.46));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.4); ctx.stroke();
+}
+function drawBelt(o){
+  const r = o.h/2, {x, y, w, h} = o;
+  roundRectPath(x, y, w, h, r);
+  ctx.lineWidth = 2.5; ctx.strokeStyle = o.color; ctx.stroke();
+  const rr = Math.max(4, r*0.52);
+  [x+r, x+w-r].forEach(cx=>{
+    ctx.beginPath(); ctx.arc(cx, y+h/2, rr, 0, Math.PI*2);
+    ctx.fillStyle = lighten(o.color, 0.72); ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = o.color; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx, y+h/2, 2.4, 0, Math.PI*2);
+    ctx.fillStyle = o.color; ctx.fill();
+  });
+  ctx.beginPath();
+  ctx.moveTo(x+r, y+3);   ctx.lineTo(x+w-r, y+3);
+  ctx.moveTo(x+r, y+h-3); ctx.lineTo(x+w-r, y+h-3);
+  ctx.lineWidth = 2; ctx.strokeStyle = o.color; ctx.stroke();
+}
+function drawArrow(o){
+  const {x, y, x2, y2} = o;
+  const len = Math.hypot(x2-x, y2-y);
+  if(len < 2) return;
+  const a = Math.atan2(y2-y, x2-x);
+  const hl = Math.min(22, len*0.36);
+  ctx.save();
+  ctx.strokeStyle = o.color; ctx.fillStyle = o.color;
+  ctx.lineWidth = o.lw || 3;
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  const bx = x2 - Math.cos(a)*hl*0.88;
+  const by = y2 - Math.sin(a)*hl*0.88;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(bx, by); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - Math.cos(a-0.42)*hl, y2 - Math.sin(a-0.42)*hl);
+  ctx.lineTo(x2 - Math.cos(a+0.42)*hl, y2 - Math.sin(a+0.42)*hl);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+function drawSolidLine(o){
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = o.lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(o.x, o.y);
+  ctx.lineTo(o.x2, o.y2);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawDashedLine(o){
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = o.lw;
+  ctx.lineCap = 'butt';
+  ctx.setLineDash(o.dash || [10, 8]);
+  ctx.beginPath();
+  ctx.moveTo(o.x, o.y);
+  ctx.lineTo(o.x2, o.y2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+function drawArcShape(o){
+  const rad1 = o.startAngle * Math.PI / 180;
+  const rad2 = o.endAngle * Math.PI / 180;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = o.lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.arc(o.x, o.y, o.r, rad1, rad2, o.counterClockwise || false);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawRope(o){
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = o.lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  if(o.sag > 1){
+    const mx = (o.x+o.x2)/2, my = (o.y+o.y2)/2;
+    const dx = o.x2-o.x, dy = o.y2-o.y;
+    const len = Math.hypot(dx,dy) || 1;
+    let nx = -dy/len, ny = dx/len;
+    if(ny < 0){ nx = -nx; ny = -ny; }
+    ctx.moveTo(o.x, o.y);
+    ctx.quadraticCurveTo(mx + nx*o.sag, my + ny*o.sag, o.x2, o.y2);
+  } else {
+    ctx.moveTo(o.x, o.y); ctx.lineTo(o.x2, o.y2);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+function drawRod(o){
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x2, o.y2);
+  ctx.lineWidth = o.lw + 3; ctx.strokeStyle = darken(o.color, 0.42); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(o.x2, o.y2);
+  ctx.lineWidth = o.lw; ctx.strokeStyle = o.color; ctx.stroke();
+  ctx.restore();
+}
+function drawSpring(o){
+  const {x, y, x2, y2} = o;
+  const len = Math.hypot(x2-x, y2-y);
+  if(len < 10) return;
+  const ang = Math.atan2(y2-y, x2-x);
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(ang);
+  const lead = Math.min(16, len*0.1);
+  const bodyLen = len - lead*2;
+  const coils = o.coils || 9;
+  const seg = bodyLen / coils;
+  const amp = Math.min(13, (o.lw || 3) * 4);
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(lead, 0);
+  for(let i = 0; i < coils; i++){
+    const bx = lead + i*seg;
+    ctx.lineTo(bx + seg*0.25, -amp);
+    ctx.lineTo(bx + seg*0.75,  amp);
+  }
+  ctx.lineTo(lead + bodyLen, 0);
+  ctx.lineTo(len, 0);
+  ctx.lineWidth = o.lw || 3;
+  ctx.strokeStyle = o.color;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+  ctx.restore();
+}
+function drawPulley(o){
+  const cx = o.x + o.r, cy = o.y + o.r;
+  const rOut = o.r;
+  const th   = Math.min(o.th, o.r*0.6);
+  const rIn  = rOut - th;
+  const rHub = Math.max(5, rOut*0.18);
+  ctx.beginPath();
+  ctx.arc(cx, cy, rOut, 0, Math.PI*2);
+  ctx.arc(cx, cy, rIn,  0, Math.PI*2, true);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(cx-rOut, cy-rOut, cx+rOut, cy+rOut);
+  g.addColorStop(0, lighten(o.color, 0.5));
+  g.addColorStop(0.5, o.color);
+  g.addColorStop(1, darken(o.color, 0.22));
+  ctx.fillStyle = g;
+  ctx.fill('evenodd');
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.5); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, rIn, 0, Math.PI*2);
+  ctx.fillStyle = lighten(o.color, 0.78); ctx.fill();
+  ctx.lineWidth = 1; ctx.strokeStyle = alpha(darken(o.color,0.4), 0.35); ctx.stroke();
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.strokeStyle = darken(o.color, 0.14);
+  ctx.lineWidth = Math.max(2, o.r*0.05);
+  ctx.lineCap = 'round';
+  for(let i = 0; i < 6; i++){
+    const a = (i/6)*Math.PI*2 + Math.PI/6;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(a)*rHub*0.95, Math.sin(a)*rHub*0.95);
+    ctx.lineTo(Math.cos(a)*rIn*0.94,  Math.sin(a)*rIn*0.94);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.beginPath(); ctx.arc(cx, cy, rHub, 0, Math.PI*2);
+  const g2 = ctx.createRadialGradient(cx-rHub*0.4, cy-rHub*0.4, 1, cx, cy, rHub);
+  g2.addColorStop(0, lighten(o.color, 0.6));
+  g2.addColorStop(1, darken(o.color, 0.32));
+  ctx.fillStyle = g2; ctx.fill();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = darken(o.color, 0.55); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx, cy, rHub*0.42, 0, Math.PI*2);
+  ctx.fillStyle = '#ffffff'; ctx.fill();
+  ctx.lineWidth = 1; ctx.strokeStyle = darken(o.color, 0.5); ctx.stroke();
+}
+function drawLabel(o){
+  ctx.save();
+  ctx.font = labelFont(o.fs);
+  ctx.fillStyle = o.color;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(o.text, o.x, o.y);
+  ctx.restore();
+}
+function drawAxes2D(o){
+  const {x, y, w, h, tick, lw} = o;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.fillStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x + w, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + w + 13, y);
+  ctx.lineTo(x + w - 1, y - 6);
+  ctx.lineTo(x + w - 1, y + 6);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x, y - h);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x, y - h - 13);
+  ctx.lineTo(x - 6, y - h + 1);
+  ctx.lineTo(x + 6, y - h + 1);
+  ctx.closePath();
+  ctx.fill();
+  if(tick >= 4){
+    ctx.lineWidth = Math.max(1, lw * 0.7);
+    for(let tx = tick; tx <= w - 6; tx += tick){
+      ctx.beginPath();
+      ctx.moveTo(x + tx, y - 6);
+      ctx.lineTo(x + tx, y + 6);
+      ctx.stroke();
+    }
+    for(let ty = tick; ty <= h - 6; ty += tick){
+      ctx.beginPath();
+      ctx.moveTo(x - 6, y - ty);
+      ctx.lineTo(x + 6, y - ty);
+      ctx.stroke();
+    }
+    ctx.lineWidth = lw;
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(2, lw * 1.2), 0, Math.PI*2);
+  ctx.fill();
+  ctx.font = 'bold 15px -apple-system,"PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(o.labelX, x + w + 20, y);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'bottom';
+  ctx.fillText(o.labelY, x, y - h - 20);
+  ctx.restore();
+}
+function drawAxes1D(o){
+  const {x, y, w, tick, lw} = o;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.fillStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - 24, y); ctx.lineTo(x + w, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + w + 13, y);
+  ctx.lineTo(x + w - 1, y - 6);
+  ctx.lineTo(x + w - 1, y + 6);
+  ctx.closePath();
+  ctx.fill();
+  if(tick >= 4){
+    ctx.lineWidth = Math.max(1, lw * 0.7);
+    for(let tx = 0; tx <= w - 6; tx += tick){
+      ctx.beginPath();
+      ctx.moveTo(x + tx, y - 6);
+      ctx.lineTo(x + tx, y + 6);
+      ctx.stroke();
+    }
+    ctx.lineWidth = lw;
+  }
+  ctx.beginPath();
+  ctx.arc(x, y, Math.max(2, lw * 1.2), 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+function drawPipe(o){
+  const rOut = o.r, rIn = Math.max(3, o.r - o.th);
+  const cx = o.x + o.r, cy = o.y + o.r;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rOut, 0, Math.PI*2, false);
+  ctx.arc(cx, cy, rIn,  0, Math.PI*2, true);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(cx-rOut, cy-rOut, cx+rOut, cy+rOut);
+  g.addColorStop(0, lighten(o.color, 0.55));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g;
+  ctx.fill('evenodd');
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = darken(o.color, 0.4);
+  ctx.stroke();
+}
+function drawHalfGroove(o){
+  const rOut = o.r, rIn = Math.max(3, o.r - o.th);
+  const cx = o.x + o.r, cy = o.y + o.r;
+  const rad = (o.rot || 0) * Math.PI / 180;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rad);
+  ctx.beginPath();
+  ctx.arc(0, 0, rOut, Math.PI, Math.PI*2, false);
+  ctx.arc(0, 0, rIn,  Math.PI*2, Math.PI, true);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(-rOut, -rOut, rOut, 0);
+  g.addColorStop(0, lighten(o.color, 0.55));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g;
+  ctx.fill('evenodd');
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = darken(o.color, 0.4);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawQuarterGroove(o){
+  const rOut = o.r, rIn = Math.max(3, o.r - o.th);
+  const cx = o.x + o.r, cy = o.y + o.r;
+  const rad = (o.rot || 0) * Math.PI / 180;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rad);
+  ctx.beginPath();
+  ctx.arc(0, 0, rOut, Math.PI, Math.PI*1.5, false);
+  ctx.arc(0, 0, rIn,  Math.PI*1.5, Math.PI, true);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(-rOut, -rOut, 0, 0);
+  g.addColorStop(0, lighten(o.color, 0.55));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g;
+  ctx.fill('evenodd');
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = darken(o.color, 0.4);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawCircleTrack(o){
+  const cx = o.x + o.r, cy = o.y + o.r;
+  const rOut = o.r, rIn = Math.max(3, o.r - o.th);
+  ctx.beginPath();
+  ctx.arc(cx, cy, rOut, 0, Math.PI*2, false);
+  ctx.arc(cx, cy, rIn,  0, Math.PI*2, true);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(cx-rOut, cy-rOut, cx+rOut, cy+rOut);
+  g.addColorStop(0, lighten(o.color, 0.6));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g;
+  ctx.fill('evenodd');
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = darken(o.color, 0.42);
+  ctx.stroke();
+}
+function drawHalfTrack(o){
+  const cx = o.x + o.r, cy = o.y + o.r;
+  const rOut = o.r, rIn = Math.max(3, o.r - o.th);
+  const rad = (o.rot || 0) * Math.PI / 180;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rad);
+  ctx.beginPath();
+  ctx.arc(0, 0, rOut, Math.PI, Math.PI*2, false);
+  ctx.arc(0, 0, rIn,  Math.PI*2, Math.PI, true);
+  ctx.closePath();
+  const g = ctx.createLinearGradient(-rOut, -rOut, rOut, 0);
+  g.addColorStop(0, lighten(o.color, 0.6));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g;
+  ctx.fill('evenodd');
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = darken(o.color, 0.42);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawCurvedTrack(o){
+  const {x, y, w, h} = o;
+  const th = o.th;
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  ctx.quadraticCurveTo(x + w*0.1, y + h*0.15, x + w, y);
+  ctx.lineWidth = th;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = o.color;
+  ctx.stroke();
+  ctx.lineWidth = th * 0.42;
+  ctx.strokeStyle = lighten(o.color, 0.5);
+  ctx.stroke();
+}
+function drawWall(o){
+  const {x, y, w, h} = o;
+  ctx.fillStyle = lighten(o.color, 0.78);
+  ctx.fillRect(x, y, w, h);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.strokeStyle = alpha(o.color, 0.55);
+  ctx.lineWidth = 2;
+  const step = 13;
+  for(let i = -h; i < w + h; i += step){
+    ctx.beginPath();
+    ctx.moveTo(x + i, y + h);
+    ctx.lineTo(x + i + h, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = darken(o.color, 0.32);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+  ctx.beginPath();
+  ctx.moveTo(x, y); ctx.lineTo(x, y+h);
+  ctx.lineWidth = 4; ctx.strokeStyle = o.color; ctx.stroke();
+}
+function drawGround(o){
+  const {x, y, w, h} = o;
+  ctx.fillStyle = lighten(o.color, 0.78);
+  ctx.fillRect(x, y, w, h);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x, y, w, h); ctx.clip();
+  ctx.strokeStyle = alpha(o.color, 0.55);
+  ctx.lineWidth = 2;
+  const step = 13;
+  for(let i = -h; i < w + h; i += step){
+    ctx.beginPath();
+    ctx.moveTo(x + i, y + h);
+    ctx.lineTo(x + i + h, y);
+    ctx.stroke();
+  }
+  ctx.restore();
+  ctx.strokeStyle = darken(o.color, 0.32);
+  ctx.lineWidth = 2;
+  ctx.strokeRect(x, y, w, h);
+  ctx.beginPath();
+  ctx.moveTo(x, y+h); ctx.lineTo(x+w, y+h);
+  ctx.lineWidth = 4; ctx.strokeStyle = o.color; ctx.stroke();
+}
+function drawAnchor(o){
+  const cx = o.x + o.r, cy = o.y + o.r;
+  ctx.beginPath();
+  ctx.arc(cx, cy, o.r, 0, Math.PI*2);
+  const g = ctx.createRadialGradient(cx-o.r*0.4, cy-o.r*0.4, 1, cx, cy, o.r);
+  g.addColorStop(0, lighten(o.color, 0.6));
+  g.addColorStop(1, o.color);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.42); ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy, o.r*0.28, 0, Math.PI*2);
+  ctx.fillStyle = darken(o.color, 0.4);
+  ctx.fill();
+}
+function drawPendulum(o, cone){
+  const ang = (o.tilt || 0) * Math.PI / 180;
+  const bx = o.x + Math.sin(ang) * o.len;
+  const by = o.y + Math.cos(ang) * o.len;
+  ctx.beginPath(); ctx.arc(o.x, o.y, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#374151'; ctx.fill();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = '#111827'; ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(o.x, o.y);
+  ctx.lineTo(bx, by);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = '#6b7280';
+  ctx.stroke();
+  if(cone){
+    ctx.beginPath();
+    ctx.ellipse(o.x, by, Math.abs(o.len*Math.sin(ang)), Math.abs(o.len*Math.sin(ang))*0.28, 0, 0, Math.PI*2);
+    ctx.setLineDash([6,5]);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = alpha(o.color, 0.6);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const r = o.r;
+  const g = ctx.createRadialGradient(bx-r*0.4, by-r*0.4, r*0.05, bx, by, r);
+  g.addColorStop(0, lighten(o.color, 0.75));
+  g.addColorStop(1, o.color);
+  ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI*2);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.42); ctx.stroke();
+}
+function fieldPath(o){
+  const {x, y, w, h} = o;
+  ctx.beginPath();
+  if(o.shape === 'rect'){
+    roundRectPath(x, y, w, h, 8);
+  } else {
+    const cx = x + w/2, cy = y + h/2;
+    const rOut = Math.min(w, h)/2;
+    ctx.arc(cx, cy, rOut, 0, Math.PI*2);
+    if(o.shape === 'ring'){
+      ctx.arc(cx, cy, rOut*0.55, 0, Math.PI*2, true);
+    }
+  }
+}
+function drawFieldSymbol(px, py, o){
+  const s = 7;
+  if(o.field === 'B'){
+    if(o.dir === 'out'){
+      ctx.beginPath(); ctx.arc(px, py, 2.6, 0, Math.PI*2); ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(px-s, py-s); ctx.lineTo(px+s, py+s);
+      ctx.moveTo(px+s, py-s); ctx.lineTo(px-s, py+s);
+      ctx.stroke();
+    }
+  } else {
+    const angMap = { right:0, down:Math.PI/2, left:Math.PI, up:-Math.PI/2 };
+    const a = angMap[o.dir] !== undefined ? angMap[o.dir] : 0;
+    ctx.save();
+    ctx.translate(px, py); ctx.rotate(a);
+    ctx.beginPath();
+    ctx.moveTo(-8, 0); ctx.lineTo(8, 0);
+    ctx.moveTo(8, 0);  ctx.lineTo(2.5, -4.5);
+    ctx.moveTo(8, 0);  ctx.lineTo(2.5,  4.5);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+function drawField(o){
+  const {x, y, w, h} = o;
+  ctx.save();
+  fieldPath(o);
+  ctx.fillStyle = alpha(o.color, 0.07);
+  ctx.fill('evenodd');
+  ctx.restore();
+  ctx.save();
+  fieldPath(o);
+  ctx.setLineDash([7,5]);
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = alpha(o.color, 0.85);
+  ctx.stroke();
+  ctx.restore();
+  const cx = x + w/2, cy = y + h/2;
+  const rOut = Math.min(w, h)/2;
+  const rIn  = rOut * 0.55;
+  const step = o.field === 'B' ? 38 : 46;
+  ctx.save();
+  ctx.strokeStyle = alpha(o.color, 0.9);
+  ctx.fillStyle   = alpha(o.color, 0.9);
+  ctx.lineWidth   = 1.7;
+  ctx.lineCap = 'round';
+  for(let px = x + step/2; px < x + w; px += step){
+    for(let py = y + step/2; py < y + h; py += step){
+      let inside = false;
+      if(o.shape === 'rect'){
+        inside = px > x+6 && px < x+w-6 && py > y+6 && py < y+h-6;
+      } else {
+        const d = Math.hypot(px-cx, py-cy);
+        inside = (o.shape === 'circle')
+          ? d <= rOut - 8
+          : (d >= rIn + 7 && d <= rOut - 8);
+      }
+      if(inside) drawFieldSymbol(px, py, o);
+    }
+  }
+  ctx.restore();
+  ctx.save();
+  ctx.font = 'bold 15px system-ui,sans-serif';
+  ctx.fillStyle = alpha(o.color, 0.95);
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText(o.field === 'B' ? 'B' : 'E', x + 8, y + 6);
+  ctx.restore();
+}
+function drawCharge(o){
+  const r = o.w/2, cx = o.x+r, cy = o.y+r;
+  const g = ctx.createRadialGradient(cx-r*0.4, cy-r*0.4, r*0.05, cx, cy, r);
+  g.addColorStop(0, lighten(o.color, 0.82));
+  g.addColorStop(1, o.color);
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = darken(o.color, 0.42); ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold ${Math.round(r*1.15)}px system-ui,sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(o.q, cx, cy + r*0.06);
+}
+
+/* ====================== 电路元件 ====================== */
+function drawBattery(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const lw = o.lw || 3;
+  const longH = Math.min(h * 0.75, 46);
+  const shortH = longH * 0.5;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.fillStyle = o.color;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(cx - 6, cy);
+  ctx.moveTo(cx + 6, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.lineWidth = lw * 0.9;
+  ctx.beginPath();
+  ctx.moveTo(cx - 6, cy - longH/2);
+  ctx.lineTo(cx - 6, cy + longH/2);
+  ctx.stroke();
+  ctx.lineWidth = lw * 1.6;
+  ctx.beginPath();
+  ctx.moveTo(cx + 6, cy - shortH/2);
+  ctx.lineTo(cx + 6, cy + shortH/2);
+  ctx.stroke();
+  ctx.font = 'bold 13px system-ui,sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('+', cx - 17, cy - longH/2 - 5);
+  ctx.fillText('−', cx + 17, cy - shortH/2 - 5);
+  ctx.restore();
+}
+function drawSwitch(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const lw = o.lw || 3;
+  const r = 4;
+  const armLen = Math.min(w * 0.5, 44);
+  const leftDotX = cx - armLen/2;
+  const rightDotX = cx + armLen/2;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.fillStyle = o.color;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(leftDotX, cy);
+  ctx.moveTo(rightDotX, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(leftDotX, cy, r, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(rightDotX, cy, r, 0, Math.PI*2);
+  ctx.fill();
+  if(o.closed){
+    ctx.beginPath();
+    ctx.moveTo(leftDotX, cy);
+    ctx.lineTo(rightDotX, cy);
+    ctx.stroke();
+  } else {
+    ctx.beginPath();
+    ctx.moveTo(leftDotX, cy);
+    ctx.lineTo(rightDotX - 2, cy - 18);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawResistor(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const bw = Math.min(w * 0.55, 60);
+  const bh = Math.min(h * 0.6, 24);
+  const lw = o.lw || 3;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(cx - bw/2, cy);
+  ctx.moveTo(cx + bw/2, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - bw/2, cy - bh/2, bw, bh);
+  ctx.strokeRect(cx - bw/2, cy - bh/2, bw, bh);
+  ctx.restore();
+}
+function drawRheostat(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const bw = Math.min(w * 0.6, 70);
+  const bh = Math.min(h * 0.45, 24);
+  const lw = o.lw || 3;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.fillStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(cx - bw/2, cy);
+  ctx.moveTo(cx + bw/2, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - bw/2, cy - bh/2, bw, bh);
+  ctx.fillStyle = o.color;
+  ctx.strokeRect(cx - bw/2, cy - bh/2, bw, bh);
+  const sliderPos = (o.sliderPos === undefined) ? 0 : Math.max(-1, Math.min(1, o.sliderPos));
+  const arrowX = cx + sliderPos * (bw/2 - 10);
+  const arrowTopY = cy - bh/2 - 16;
+  ctx.beginPath();
+  ctx.moveTo(arrowX, arrowTopY);
+  ctx.lineTo(arrowX, cy - bh/2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(arrowX, cy - bh/2);
+  ctx.lineTo(arrowX - 5, cy - bh/2 - 9);
+  ctx.lineTo(arrowX + 5, cy - bh/2 - 9);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(cx - bw/2, arrowTopY);
+  ctx.lineTo(cx + bw/2, arrowTopY);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawBulb(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const r = Math.min(w, h) * 0.32;
+  const lw = o.lw || 3;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(cx - r, cy);
+  ctx.moveTo(cx + r, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  const d = r * 0.68;
+  ctx.beginPath();
+  ctx.moveTo(cx - d, cy - d); ctx.lineTo(cx + d, cy + d);
+  ctx.moveTo(cx + d, cy - d); ctx.lineTo(cx - d, cy + d);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawMeter(o, letter){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const r = Math.min(w, h) * 0.34;
+  const lw = o.lw || 3;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(cx - r, cy);
+  ctx.moveTo(cx + r, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = o.color;
+  ctx.font = `bold ${Math.round(r*1.25)}px system-ui,sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(letter, cx, cy + 1);
+  ctx.restore();
+}
+function drawWire(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const lw = o.lw || 3;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.fillStyle = o.color;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.moveTo(x, cy);
+  ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, cy, 3, 0, Math.PI*2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x + w, cy, 3, 0, Math.PI*2);
+  ctx.fill();
+  ctx.restore();
+}
+function drawGroundSym(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const lw = o.lw || 3;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.moveTo(x, cy);
+  ctx.lineTo(cx, cy);
+  ctx.stroke();
+  const stemLen = Math.min(h * 0.22, 22);
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(cx, cy + stemLen);
+  ctx.stroke();
+  const y0 = cy + stemLen;
+  const widths = [26, 17, 9];
+  widths.forEach((ww, i) => {
+    ctx.beginPath();
+    ctx.moveTo(cx - ww, y0 + i * 7);
+    ctx.lineTo(cx + ww, y0 + i * 7);
+    ctx.lineWidth = lw * 0.9;
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+function drawCapacitor(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const lw = o.lw || 3;
+  const plateH = Math.min(h * 0.7, 46);
+  const gap = 14;
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(cx - gap/2, cy);
+  ctx.moveTo(cx + gap/2, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.lineWidth = lw * 1.3;
+  ctx.beginPath();
+  ctx.moveTo(cx - gap/2, cy - plateH/2);
+  ctx.lineTo(cx - gap/2, cy + plateH/2);
+  ctx.moveTo(cx + gap/2, cy - plateH/2);
+  ctx.lineTo(cx + gap/2, cy + plateH/2);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawInductor(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const lw = o.lw || 3;
+  const coilW = Math.min(w * 0.6, 70);
+  const nCoils = 4;
+  const r = coilW / (nCoils * 2);
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  const startX = cx - coilW/2;
+  const endX = cx + coilW/2;
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(startX, cy);
+  ctx.moveTo(endX, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  for(let i = 0; i < nCoils; i++){
+    const px = startX + r * (2*i + 1);
+    ctx.beginPath();
+    ctx.arc(px, cy, r, Math.PI, 0, false);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function drawDiode(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const lw = o.lw || 3;
+  const triW = Math.min(w * 0.18, 22);
+  const triH = Math.min(h * 0.65, 34);
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.fillStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(cx - triW, cy);
+  ctx.moveTo(cx + triW * 0.4, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - triW, cy - triH/2);
+  ctx.lineTo(cx + triW * 0.4, cy);
+  ctx.lineTo(cx - triW, cy + triH/2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.lineWidth = lw * 1.3;
+  ctx.beginPath();
+  ctx.moveTo(cx + triW * 0.4, cy - triH/2);
+  ctx.lineTo(cx + triW * 0.4, cy + triH/2);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawMultimeter(o){
+  const {x, y, w, h} = o;
+  const cy = y + h/2;
+  const cx = x + w/2;
+  const lw = o.lw || 3;
+  const bw = Math.min(w * 0.55, 62);
+  const bh = Math.min(h * 0.72, 74);
+  ctx.save();
+  ctx.strokeStyle = o.color;
+  ctx.lineWidth = lw;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x, cy); ctx.lineTo(cx - bw/2, cy);
+  ctx.moveTo(cx + bw/2, cy); ctx.lineTo(x + w, cy);
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(cx - bw/2, cy - bh/2, bw, bh);
+  ctx.strokeRect(cx - bw/2, cy - bh/2, bw, bh);
+  ctx.beginPath();
+  ctx.arc(cx, cy + bh * 0.22, bw * 0.30, Math.PI * 1.15, Math.PI * 1.85);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + bh * 0.22);
+  ctx.lineTo(cx + bw * 0.16, cy - bh * 0.20);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(cx, cy + bh * 0.36, bw * 0.09, 0, Math.PI*2);
+  ctx.fillStyle = o.color;
+  ctx.fill();
+  ctx.restore();
+}
+
+/* ====================== 统一绘制 ====================== */
+function drawObject(o, t){
+  switch(o.type){
+    case 'ball':          drawBall(o); break;
+    case 'block':         drawBlock(o); break;
+    case 'cart':          drawCart(o); break;
+    case 'weight':        drawWeight(o); break;
+    case 'incline':       drawIncline(o); break;
+    case 'board':         drawBoard(o); break;
+    case 'belt':          drawBelt(o); break;
+    case 'sphere':        drawSphere(o); break;
+    case 'cube':          drawBoxShape(o); break;
+    case 'cuboid':        drawBoxShape(o); break;
+    case 'cone':          drawConeShape(o); break;
+    case 'tetrahedron':   drawTetrahedron(o); break;
+    case 'cylinder':      drawCylinder(o); break;
+    case 'circleShape':   drawCircleShape(o); break;
+    case 'squareShape':   drawSquareShape(o); break;
+    case 'rectShape':     drawRectShape(o); break;
+    case 'equiTri':       drawEquiTri(o); break;
+    case 'rightTri':      drawRightTri(o); break;
+    case 'ellipseShape':  drawEllipseShape(o); break;
+    case 'parabolaShape': drawParabolaShape(o); break;
+    case 'arrow':         drawArrow(o); break;
+    case 'solidLine':     drawSolidLine(o); break;
+    case 'dashedLine':    drawDashedLine(o); break;
+    case 'arc':           drawArcShape(o); break;
+    case 'rope':          drawRope(o); break;
+    case 'rod':           drawRod(o); break;
+    case 'spring':        drawSpring(o); break;
+    case 'pulley':        drawPulley(o); break;
+    case 'label':         drawLabel(o); break;
+    case 'axes2D':        drawAxes2D(o); break;
+    case 'axes1D':        drawAxes1D(o); break;
+    case 'pipe':          drawPipe(o); break;
+    case 'halfGroove':    drawHalfGroove(o); break;
+    case 'quarterGroove': drawQuarterGroove(o); break;
+    case 'circleTrack':   drawCircleTrack(o); break;
+    case 'halfTrack':     drawHalfTrack(o); break;
+    case 'curvedTrack':   drawCurvedTrack(o); break;
+    case 'wall':          drawWall(o); break;
+    case 'ground':        drawGround(o); break;
+    case 'anchor':        drawAnchor(o); break;
+    case 'field':         drawField(o); break;
+    case 'charge':        drawCharge(o); break;
+    case 'pendulum':      drawPendulum(o, false); break;
+    case 'conePendulum':  drawPendulum(o, true); break;
+    case 'battery':       drawBattery(o); break;
+    case 'switch':        drawSwitch(o); break;
+    case 'resistor':      drawResistor(o); break;
+    case 'rheostat':      drawRheostat(o); break;
+    case 'bulb':          drawBulb(o); break;
+    case 'ammeter':       drawMeter(o, 'A'); break;
+    case 'voltmeter':     drawMeter(o, 'V'); break;
+    case 'wire':          drawWire(o); break;
+    case 'groundSym':     drawGroundSym(o); break;
+    case 'capacitor':     drawCapacitor(o); break;
+    case 'inductor':      drawInductor(o); break;
+    case 'diode':         drawDiode(o); break;
+    case 'multimeter':    drawMultimeter(o); break;
+  }
+}
+
+function drawStrokes(){
+  for(const s of strokes){
+    if(s.points.length < 2) continue;
+    ctx.beginPath();
+    ctx.moveTo(s.points[0].x, s.points[0].y);
+    for(let i = 1; i < s.points.length; i++){
+      ctx.lineTo(s.points[i].x, s.points[i].y);
+    }
+    ctx.lineWidth = s.lw;
+    ctx.strokeStyle = s.color;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+  if(currentStroke && currentStroke.points.length >= 2){
+    ctx.beginPath();
+    ctx.moveTo(currentStroke.points[0].x, currentStroke.points[0].y);
+    for(let i = 1; i < currentStroke.points.length; i++){
+      ctx.lineTo(currentStroke.points[i].x, currentStroke.points[i].y);
+    }
+    ctx.lineWidth = currentStroke.lw;
+    ctx.strokeStyle = currentStroke.color;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+  }
+}
+
+function drawSelection(o){
+  const b = getBBox(o);
+  ctx.save();
+  ctx.strokeStyle = '#2b7cff';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([7,5]);
+  ctx.strokeRect(b.x, b.y, b.w, b.h);
+  ctx.restore();
+  if(SEG_TYPES[o.type]){
+    [[o.x,o.y],[o.x2,o.y2]].forEach(([hx,hy])=>{
+      ctx.beginPath(); ctx.arc(hx, hy, 5.5, 0, Math.PI*2);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#2b7cff'; ctx.stroke();
+    });
+  }
+  if(o.type === 'arc'){
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(o.x, o.y, 4, 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#2b7cff'; ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(o.x - 7, o.y); ctx.lineTo(o.x + 7, o.y);
+    ctx.moveTo(o.x, o.y - 7); ctx.lineTo(o.x, o.y + 7);
+    ctx.lineWidth = 1.2; ctx.strokeStyle = '#2b7cff'; ctx.stroke();
+    const a1 = o.startAngle * Math.PI/180;
+    const a2 = o.endAngle * Math.PI/180;
+    [[a1, '#22c55e'], [a2, '#ef4444']].forEach(([a, col])=>{
+      const px = o.x + Math.cos(a) * o.r;
+      const py = o.y + Math.sin(a) * o.r;
+      ctx.beginPath();
+      ctx.arc(px, py, 5.5, 0, Math.PI*2);
+      ctx.fillStyle = col; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+    });
+    ctx.restore();
+  }
+  if(ROTATABLE[o.type]){
+    const { cx, cy } = getCenter(o);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4, 0, Math.PI*2);
+    ctx.fillStyle = '#fff'; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#2b7cff'; ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx - 7, cy); ctx.lineTo(cx + 7, cy);
+    ctx.moveTo(cx, cy - 7); ctx.lineTo(cx, cy + 7);
+    ctx.lineWidth = 1.2; ctx.strokeStyle = '#2b7cff'; ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawGrid(){
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#f0f4fa';
+  ctx.beginPath();
+  for(let x = 0; x <= W; x += GRID){ ctx.moveTo(x+.5, 0); ctx.lineTo(x+.5, H); }
+  for(let y = 0; y <= H; y += GRID){ ctx.moveTo(0, y+.5); ctx.lineTo(W, y+.5); }
+  ctx.stroke();
+  ctx.strokeStyle = '#e2e9f4';
+  ctx.beginPath();
+  for(let x = 0; x <= W; x += 100){ ctx.moveTo(x+.5, 0); ctx.lineTo(x+.5, H); }
+  for(let y = 0; y <= H; y += 100){ ctx.moveTo(0, y+.5); ctx.lineTo(W, y+.5); }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ====================== 渲染 ====================== */
+function renderScene(ts){
+  ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, W, H);
+  if(showGrid) drawGrid();
+  for(const o of objects) drawObject(o, ts);
+  drawStrokes();
+  if(selected && !brushMode && !eraserMode) drawSelection(selected);
+}
+function loop(ts){ renderScene(ts); requestAnimationFrame(loop); }
+
+/* ====================== 命中检测 ====================== */
+function hitTest(o, px, py){
+  if(ROTATABLE[o.type]) return hitTestRotatedShape(o, px, py);
+  switch(o.type){
+    case 'ball': case 'charge': case 'sphere': {
+      const r = o.w/2, cx = o.x+r, cy = o.y+r;
+      return Math.hypot(px-cx, py-cy) <= r + 3;
+    }
+    case 'incline':
+      return pointInTriangle(px, py,
+        o.x+o.w, o.y,  o.x+o.w, o.y+o.h,  o.x, o.y+o.h);
+    case 'cube': case 'cuboid': {
+      const d = o.depth || 28;
+      return px >= o.x && px <= o.x + o.w + d &&
+             py >= o.y - d && py <= o.y + o.h;
+    }
+    case 'pipe': case 'pulley':
+    case 'halfGroove': case 'quarterGroove':
+    case 'circleTrack': case 'halfTrack': case 'anchor': {
+      const cx = o.x+o.r, cy = o.y+o.r;
+      return Math.hypot(px-cx, py-cy) <= o.r + 6;
+    }
+    case 'arrow':
+      return distToSeg(px, py, o.x, o.y, o.x2, o.y2) <= 11;
+    case 'solidLine':
+      return distToSeg(px, py, o.x, o.y, o.x2, o.y2) <= Math.max(11, o.lw/2+6);
+    case 'dashedLine':
+      return distToSeg(px, py, o.x, o.y, o.x2, o.y2) <= Math.max(11, o.lw/2+6);
+    case 'rope':
+      return distToSeg(px, py, o.x, o.y, o.x2, o.y2) <= Math.max(11, o.lw+8);
+    case 'rod':
+      return distToSeg(px, py, o.x, o.y, o.x2, o.y2) <= Math.max(11, o.lw/2+8);
+    case 'spring':
+      return distToSeg(px, py, o.x, o.y, o.x2, o.y2) <= 15;
+    case 'arc': {
+      const startRad = o.startAngle * Math.PI/180;
+      const endRad = o.endAngle * Math.PI/180;
+      const n = 36;
+      let minD = Infinity;
+      for(let i = 0; i <= n; i++){
+        const a = startRad + (endRad - startRad) * i / n;
+        const ax = o.x + Math.cos(a) * o.r;
+        const ay = o.y + Math.sin(a) * o.r;
+        const d = Math.hypot(px - ax, py - ay);
+        if(d < minD) minD = d;
+      }
+      return minD <= Math.max(12, o.lw + 8);
+    }
+    case 'axes2D':
+      if(distToSeg(px, py, o.x, o.y, o.x + o.w + 14, o.y) <= 13) return true;
+      if(distToSeg(px, py, o.x, o.y, o.x, o.y - o.h - 14) <= 13) return true;
+      return false;
+    case 'axes1D':
+      return distToSeg(px, py, o.x - 24, o.y, o.x + o.w + 14, o.y) <= 13;
+    case 'label': {
+      ctx.save(); ctx.font = labelFont(o.fs);
+      const tw = ctx.measureText(o.text).width;
+      ctx.restore();
+      return px >= o.x-5 && px <= o.x+tw+5 &&
+             py >= o.y-5 && py <= o.y+o.fs*1.3+5;
+    }
+    case 'field': {
+      if(o.shape === 'rect'){
+        return px >= o.x && px <= o.x+o.w && py >= o.y && py <= o.y+o.h;
+      }
+      const cx = o.x+o.w/2, cy = o.y+o.h/2;
+      const d = Math.hypot(px-cx, py-cy);
+      const rOut = Math.min(o.w, o.h)/2;
+      if(o.shape === 'circle') return d <= rOut + 4;
+      const rIn = rOut * 0.55;
+      return d <= rOut + 4 && d >= rIn - 4;
+    }
+    case 'pendulum': case 'conePendulum': {
+      const b = getBBox(o);
+      return px >= b.x-6 && px <= b.x+b.w+6 &&
+             py >= b.y-6 && py <= b.y+b.h+6;
+    }
+    case 'curvedTrack': {
+      const b = getBBox(o);
+      return px >= b.x-12 && px <= b.x+b.w+12 &&
+             py >= b.y-12 && py <= b.y+b.h+12;
+    }
+    case 'battery': case 'switch': case 'resistor': case 'rheostat':
+    case 'bulb': case 'ammeter': case 'voltmeter': case 'wire':
+    case 'groundSym': case 'capacitor': case 'inductor':
+    case 'diode': case 'multimeter': {
+      const pad = 6;
+      return px >= o.x - pad && px <= o.x + o.w + pad &&
+             py >= o.y - pad && py <= o.y + o.h + pad;
+    }
+    default:
+      return px >= o.x && px <= o.x+o.w && py >= o.y && py <= o.y+o.h;
+  }
+}
+function findObject(px, py){
+  for(let i = objects.length - 1; i >= 0; i--){
+    const o = objects[i];
+    if(LOW_PRIORITY[o.type]) continue;
+    if(hitTest(o, px, py)) return o;
+  }
+  for(let i = objects.length - 1; i >= 0; i--){
+    const o = objects[i];
+    if(!LOW_PRIORITY[o.type]) continue;
+    if(hitTest(o, px, py)) return o;
+  }
+  return null;
+}
+
+/* ====================== 毛笔 / 橡皮擦逻辑 ====================== */
+function strokeIntersectsPoint(s, p, r){
+  for(let i = 0; i < s.points.length; i++){
+    const q = s.points[i];
+    if(Math.hypot(q.x - p.x, q.y - p.y) <= r + (s.lw||3)/2) return true;
+  }
+  for(let i = 0; i < s.points.length - 1; i++){
+    const a = s.points[i], b = s.points[i+1];
+    if(distToSeg(p.x, p.y, a.x, a.y, b.x, b.y) <= r + (s.lw||3)/2) return true;
+  }
+  return false;
+}
+function eraseAt(p){
+  const before = strokes.length;
+  strokes = strokes.filter(s => !strokeIntersectsPoint(s, p, ERASER_RADIUS));
+  return strokes.length !== before;
+}
+
+/* ====================== 坐标换算 ====================== */
+function getPos(e){
+  const rect = cv.getBoundingClientRect();
+  return {
+    x: (e.clientX - rect.left) * W / rect.width,
+    y: (e.clientY - rect.top ) * H / rect.height
+  };
+}
+
+/* ====================== 模式切换 ====================== */
+function setBrushMode(on){
+  brushMode = !!on;
+  if(brushMode) eraserMode = false;
+  brushBtn.classList.toggle('active', brushMode);
+  eraserBtn.classList.toggle('active', eraserMode);
+  cv.classList.toggle('brush-cursor', brushMode);
+  cv.classList.toggle('eraser-cursor', eraserMode && !brushMode);
+  if(brushMode || eraserMode){ selected = null; drag = null; buildProps(); }
+}
+function setEraserMode(on){
+  eraserMode = !!on;
+  if(eraserMode) brushMode = false;
+  brushBtn.classList.toggle('active', brushMode);
+  eraserBtn.classList.toggle('active', eraserMode);
+  cv.classList.toggle('brush-cursor', brushMode);
+  cv.classList.toggle('eraser-cursor', eraserMode && !brushMode);
+  if(brushMode || eraserMode){ selected = null; drag = null; buildProps(); }
+}
+brushBtn.addEventListener('click', ()=> setBrushMode(!brushMode));
+eraserBtn.addEventListener('click', ()=> setEraserMode(!eraserMode));
+
+/* ====================== 指针交互 ====================== */
+cv.addEventListener('pointerdown', function(e){
+  cv.setPointerCapture(e.pointerId);
+  const p = getPos(e);
+
+  if(brushMode){
+    currentStroke = {
+      points: [ {x:p.x, y:p.y} ],
+      color: BRUSH_DEFAULT.color,
+      lw: BRUSH_DEFAULT.lw
+    };
+    dragStartSnapshot = cloneState();
+    return;
+  }
+  if(eraserMode){
+    eraserDragging = true;
+    dragStartSnapshot = cloneState();
+    eraseAt(p);
+    return;
+  }
+
+  if(selected && SEG_TYPES[selected.type]){
+    if(Math.hypot(p.x-selected.x2, p.y-selected.y2) < 16){
+      dragStartSnapshot = cloneState();
+      drag = { mode:'end', which:'head', o:selected };
+      return;
+    }
+    if(Math.hypot(p.x-selected.x, p.y-selected.y) < 16){
+      dragStartSnapshot = cloneState();
+      drag = { mode:'end', which:'tail', o:selected };
+      return;
+    }
+  }
+  const hit = findObject(p.x, p.y);
+  if(hit){
+    selected = hit;
+    dragStartSnapshot = cloneState();
+    drag = {
+      mode:'move', o:hit,
+      sx:p.x, sy:p.y,
+      ox:hit.x, oy:hit.y,
+      ox2:hit.x2, oy2:hit.y2
+    };
+    buildProps();
+    return;
+  }
+  selected = null; drag = null;
+  buildProps();
+});
+
+cv.addEventListener('pointermove', function(e){
+  const p = getPos(e);
+
+  if(currentStroke){
+    const last = currentStroke.points[currentStroke.points.length - 1];
+    if(!last || Math.hypot(p.x - last.x, p.y - last.y) > 1.2){
+      currentStroke.points.push({x:p.x, y:p.y});
+    }
+    return;
+  }
+  if(eraserDragging){ eraseAt(p); return; }
+
+  if(drag){
+    const o = drag.o;
+    if(drag.mode === 'move'){
+      const dx = p.x - drag.sx;
+      const dy = p.y - drag.sy;
+      if(SEG_TYPES[o.type]){
+        o.x  = drag.ox  + dx;  o.y  = drag.oy  + dy;
+        o.x2 = drag.ox2 + dx;  o.y2 = drag.oy2 + dy;
+      } else {
+        o.x = drag.ox + dx; o.y = drag.oy + dy;
+      }
+      if(snapGrid){
+        if(SEG_TYPES[o.type]){
+          o.x  = Math.round(o.x /GRID)*GRID;  o.y  = Math.round(o.y /GRID)*GRID;
+          o.x2 = Math.round(o.x2/GRID)*GRID;  o.y2 = Math.round(o.y2/GRID)*GRID;
+        } else {
+          o.x = Math.round(o.x/GRID)*GRID;
+          o.y = Math.round(o.y/GRID)*GRID;
+        }
+      }
+    } else if(drag.mode === 'end'){
+      let nx = snapGrid ? Math.round(p.x/GRID)*GRID : p.x;
+      let ny = snapGrid ? Math.round(p.y/GRID)*GRID : p.y;
+      if(drag.which === 'head'){ o.x2 = nx; o.y2 = ny; }
+      else                     { o.x  = nx; o.y  = ny; }
+    }
+    return;
+  }
+
+  if(brushMode || eraserMode) return;
+  if(selected && SEG_TYPES[selected.type]){
+    if(Math.hypot(p.x-selected.x2, p.y-selected.y2) < 16 ||
+       Math.hypot(p.x-selected.x,  p.y-selected.y)  < 16){
+      cv.style.cursor = 'crosshair'; return;
+    }
+  }
+  cv.style.cursor = findObject(p.x, p.y) ? 'move' : 'default';
+});
+
+function endDrag(e){
+  if(currentStroke){
+    if(currentStroke.points.length >= 2){
+      strokes.push(currentStroke);
+      if(dragStartSnapshot) pushHistory(dragStartSnapshot);
+    }
+    currentStroke = null;
+  }
+
+  if(eraserDragging){
+    if(dragStartSnapshot &&
+       dragStartSnapshot.strokes.length !== strokes.length){
+      pushHistory(dragStartSnapshot);
+    }
+    eraserDragging = false;
+  }
+
+  if(drag && dragStartSnapshot){
+    const o = drag.o;
+    let changed = false;
+    if(drag.mode === 'move'){
+      changed = (o.x !== drag.ox || o.y !== drag.oy ||
+                 o.x2 !== drag.ox2 || o.y2 !== drag.oy2);
+    } else if(drag.mode === 'end'){
+      changed = true;
+    }
+    if(changed) pushHistory(dragStartSnapshot);
+  }
+
+  dragStartSnapshot = null;
+  drag = null;
+  if(e){ try{ cv.releasePointerCapture(e.pointerId); }catch(err){} }
+}
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
+
+window.addEventListener('keydown', function(e){
+  const key = e.key.toLowerCase();
+  if((e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey){
+    e.preventDefault();
+    undo();
+    return;
+  }
+  if((e.ctrlKey || e.metaKey) && (key === 'y' || (key === 'z' && e.shiftKey))){
+    e.preventDefault();
+    redo();
+    return;
+  }
+  if(e.key === 'Escape'){
+    if(brushMode) setBrushMode(false);
+    if(eraserMode) setEraserMode(false);
+    return;
+  }
+  if((e.key === 'Delete' || e.key === 'Backspace') && selected){
+    const tag = document.activeElement && document.activeElement.tagName;
+    if(tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    e.preventDefault();
+    saveSnapshot();
+    objects = objects.filter(o => o !== selected);
+    selected = null;
+    buildProps();
+  }
+});
+
+/* ====================== 创建物体 ====================== */
+const FIELD_DIR_B = [['in','垂直纸面向里 ⊗'], ['out','垂直纸面向外 ⊙']];
+const FIELD_DIR_E = [['right','向右 →'], ['left','向左 ←'],
+                     ['up','向上 ↑'], ['down','向下 ↓']];
+
+function makeObject(type){
+  const id = uid++;
+  switch(type){
+    case 'ball':    return { id, type, x:0, y:0, w:64, h:64, color:'#ef4444' };
+    case 'block':   return { id, type, x:0, y:0, w:110, h:70, color:'#3b82f6' };
+    case 'cart':    return { id, type, x:0, y:0, w:140, h:70, color:'#3b82f6' };
+    case 'weight':  return { id, type, x:0, y:0, w:56, h:72, color:'#a16207' };
+    case 'incline': {
+      const o = { id, type, x:0, y:0, w:280, h:0, angle:35, color:'#94a3b8' };
+      o.h = o.w * Math.tan(o.angle * Math.PI/180);
+      return o;
+    }
+    case 'board':   return { id, type, x:0, y:0, w:320, h:26, color:'#b07d4e' };
+    case 'belt':    return { id, type, x:0, y:0, w:340, h:56, color:'#334155' };
+    case 'sphere':
+      return { id, type, x:0, y:0, w:96, h:96, color:'#3b82f6', opacity:0.4 };
+    case 'cube':
+      return { id, type, x:0, y:0, w:86, h:86, depth:30, color:'#10b981', opacity:0.4 };
+    case 'cuboid':
+      return { id, type, x:0, y:0, w:120, h:76, depth:30, color:'#f59e0b', opacity:0.4 };
+    case 'cone':
+      return { id, type, x:0, y:0, w:100, h:120, color:'#ef4444', opacity:0.4 };
+    case 'tetrahedron':
+      return { id, type, x:0, y:0, w:110, h:100, color:'#8b5cf6', opacity:0.4 };
+    case 'cylinder':
+      return { id, type, x:0, y:0, w:100, h:120, color:'#0ea5e9', opacity:0.4 };
+    case 'circleShape':
+      return { id, type, x:0, y:0, w:110, h:110, rot:0, lw:3, color:'#1e293b' };
+    case 'squareShape':
+      return { id, type, x:0, y:0, w:110, h:110, rot:0, lw:3, color:'#1e293b' };
+    case 'rectShape':
+      return { id, type, x:0, y:0, w:150, h:90, rot:0, lw:3, color:'#1e293b' };
+    case 'equiTri':
+      return { id, type, x:0, y:0, w:130, h:130 * Math.sqrt(3)/2,
+               rot:0, lw:3, color:'#1e293b' };
+    case 'rightTri':
+      return { id, type, x:0, y:0, w:130, h:100, rot:0, lw:3, color:'#1e293b' };
+    case 'ellipseShape':
+      return { id, type, x:0, y:0, w:150, h:90, rot:0, lw:3, color:'#1e293b' };
+    case 'parabolaShape':
+      return { id, type, x:0, y:0, w:170, h:120, rot:0, lw:3, color:'#1e293b' };
+    case 'arrow':   return { id, type, x:0, y:0, x2:0, y2:0, color:'#e11d48', lw:3 };
+    case 'solidLine':  return { id, type, x:0, y:0, x2:0, y2:0, color:'#1e293b', lw:3 };
+    case 'dashedLine': return { id, type, x:0, y:0, x2:0, y2:0, color:'#1e293b', lw:2.5, dash:[10, 7] };
+    case 'arc':        return { id, type, x:0, y:0, r:120, startAngle:0, endAngle:180,
+                                lw:3, color:'#1e293b' };
+    case 'rope':    return { id, type, x:0, y:0, x2:0, y2:0, color:'#a16207', lw:2.5, sag:0 };
+    case 'rod':     return { id, type, x:0, y:0, x2:0, y2:0, color:'#475569', lw:9 };
+    case 'spring':  return { id, type, x:0, y:0, x2:0, y2:0, color:'#6b7280', lw:3, coils:9, k:10, restLen:160 };
+    case 'pulley':  return { id, type, x:0, y:0, r:62, th:14, color:'#6b7280' };
+    case 'label':   return { id, type, x:0, y:0, text:'标注文字', color:'#1e293b', fs:18 };
+    case 'axes2D':  return { id, type:'axes2D', x:0, y:0, w:240, h:180, tick:40, lw:2,
+                             color:'#334155', labelX:'x', labelY:'y' };
+    case 'axes1D':  return { id, type:'axes1D', x:0, y:0, w:280, tick:40, lw:2,
+                             color:'#334155' };
+    case 'pipe':    return { id, type, x:0, y:0, r:70, th:10, color:'#64748b' };
+    case 'halfGroove':    return { id, type, x:0, y:0, r:80, th:11, rot:0, color:'#64748b' };
+    case 'quarterGroove': return { id, type, x:0, y:0, r:90, th:12, rot:0, color:'#64748b' };
+    case 'circleTrack':   return { id, type, x:0, y:0, r:100, th:12, color:'#64748b' };
+    case 'halfTrack':     return { id, type, x:0, y:0, r:100, th:12, rot:0, color:'#64748b' };
+    case 'curvedTrack':   return { id, type, x:0, y:0, w:320, h:220, th:16, color:'#64748b' };
+    case 'wall':    return { id, type, x:0, y:0, w:32, h:220, color:'#94a3b8' };
+    case 'ground':  return { id, type, x:0, y:0, w:400, h:28, color:'#94a3b8' };
+    case 'anchor':  return { id, type, x:0, y:0, r:22, color:'#475569' };
+    case 'fieldB':  return { id, type:'field', x:0, y:0, w:210, h:170,
+                             shape:'rect', field:'B', dir:'in', color:'#6366f1' };
+    case 'fieldE':  return { id, type:'field', x:0, y:0, w:240, h:170,
+                             shape:'rect', field:'E', dir:'right', color:'#0ea5e9' };
+    case 'charge':  return { id, type, x:0, y:0, w:46, h:46, color:'#f59e0b', q:'+' };
+    case 'pendulum':     return { id, type, x:0, y:0, len:180, tilt:25, r:22, color:'#ef4444' };
+    case 'conePendulum': return { id, type, x:0, y:0, len:170, tilt:32, r:20, color:'#0ea5e9' };
+    case 'battery':    return { id, type, x:0, y:0, w:110, h:60, lw:3, color:'#dc2626' };
+    case 'switch':     return { id, type, x:0, y:0, w:110, h:46, lw:3, color:'#1e293b', closed:false };
+    case 'resistor':   return { id, type, x:0, y:0, w:120, h:46, lw:3, color:'#1e293b' };
+    case 'rheostat':   return { id, type, x:0, y:0, w:130, h:60, lw:3, color:'#1e293b', sliderPos:0 };
+    case 'bulb':       return { id, type, x:0, y:0, w:96, h:96, lw:3, color:'#1e293b' };
+    case 'ammeter':    return { id, type, x:0, y:0, w:96, h:96, lw:3, color:'#1e293b' };
+    case 'voltmeter':  return { id, type, x:0, y:0, w:96, h:96, lw:3, color:'#1e293b' };
+    case 'wire':       return { id, type, x:0, y:0, w:140, h:20, lw:3, color:'#1e293b' };
+    case 'groundSym':  return { id, type, x:0, y:0, w:90, h:76, lw:3, color:'#1e293b' };
+    case 'capacitor':  return { id, type, x:0, y:0, w:110, h:64, lw:3, color:'#1e293b' };
+    case 'inductor':   return { id, type, x:0, y:0, w:120, h:46, lw:3, color:'#1e293b' };
+    case 'diode':      return { id, type, x:0, y:0, w:120, h:46, lw:3, color:'#1e293b' };
+    case 'multimeter': return { id, type, x:0, y:0, w:110, h:100, lw:3, color:'#1e293b' };
+  }
+}
+
+function clampObject(o){
+  const b = getBBox(o);
+  if(b.x + b.w < 40) o.x += 40 - (b.x + b.w);
+  if(b.y + b.h < 40) o.y += 40 - (b.y + b.h);
+  if(b.x > W - 40)   o.x -= (b.x - (W - 40));
+  if(b.y > H - 40)   o.y -= (b.y - (H - 40));
+}
+
+function addObject(type){
+  const o = makeObject(type);
+  if(!o) return;
+  saveSnapshot();
+  const k = (spawnN++ % 6) - 2.5;
+  const cx = W/2 + k*42;
+  const cy = H/2 + k*34;
+  if(SEG_TYPES[o.type]){
+    o.x  = cx - 85;  o.y  = cy + 55;
+    o.x2 = cx + 85;  o.y2 = cy - 25;
+    if(o.type === 'spring'){ o.restLen = 170; }
+  } else if(o.type === 'label'){
+    o.x = cx - 45;  o.y = cy - 12;
+  } else if(o.type === 'arc'){
+    o.x = Math.round(cx);
+    o.y = Math.round(cy + 60);
+  } else if(o.type === 'axes2D' || o.type === 'axes1D'){
+    o.x = Math.round(cx - 40);
+    o.y = Math.round(cy + 70);
+  } else if(o.type === 'pendulum' || o.type === 'conePendulum'){
+    o.x = cx - 40;  o.y = cy - 90;
+  } else if(o.type === 'cube' || o.type === 'cuboid'){
+    const b = getBBox(o);
+    o.x = cx - b.w/2;
+    o.y = cy - b.h/2 + (o.depth || 28);
+  } else {
+    const b = getBBox(o);
+    o.x = cx - b.w/2;
+    o.y = cy - b.h/2;
+  }
+  clampObject(o);
+  objects.push(o);
+  selected = o;
+  buildProps();
+}
+
+document.querySelectorAll('[data-add]').forEach(btn=>{
+  btn.addEventListener('click', ()=> addObject(btn.dataset.add));
+});
+
+/* ====================== 属性面板 ====================== */
+function row(label, node){
+  const r = document.createElement('div');
+  r.className = 'row';
+  const l = document.createElement('label');
+  l.textContent = label;
+  r.appendChild(l); r.appendChild(node);
+  propBox.appendChild(r);
+  return r;
+}
+function addNumber(label, value, min, max, step, onInput){
+  const inp = document.createElement('input');
+  inp.type = 'number';
+  inp.value = Math.round(value*100)/100;
+  inp.min = min; inp.max = max; inp.step = step;
+  inp.addEventListener('input', function(){
+    let v = parseFloat(inp.value);
+    if(isNaN(v)) return;
+    v = Math.max(min, Math.min(max, v));
+    onInput(v);
+  });
+  row(label, inp);
+  return inp;
+}
+function addColor(value, onInput){
+  const inp = document.createElement('input');
+  inp.type = 'color';
+  inp.value = value;
+  inp.addEventListener('input', ()=> onInput(inp.value));
+  row('颜色', inp);
+  return inp;
+}
+function addSelect(label, options, value, onChange){
+  const sel = document.createElement('select');
+  options.forEach(([v, t])=>{
+    const op = document.createElement('option');
+    op.value = v; op.textContent = t;
+    if(v === value) op.selected = true;
+    sel.appendChild(op);
+  });
+  sel.addEventListener('change', ()=> onChange(sel.value));
+  row(label, sel);
+  return sel;
+}
+function addText(label, value, onInput){
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.value = value;
+  inp.addEventListener('input', ()=> onInput(inp.value));
+  row(label, inp);
+  return inp;
+}
+function addTip(text){
+  const d = document.createElement('div');
+  d.className = 'tip'; d.textContent = text;
+  propBox.appendChild(d);
+  return d;
+}
+function addSegControls(o){
+  addNumber('长度', Math.hypot(o.x2-o.x, o.y2-o.y), 10, 1500, 1, v => {
+    const rad = Math.atan2(o.y2-o.y, o.x2-o.x);
+    o.x2 = o.x + Math.cos(rad)*v;
+    o.y2 = o.y + Math.sin(rad)*v;
+  });
+  const ang = Math.atan2(o.y2-o.y, o.x2-o.x) * 180/Math.PI;
+  addNumber('角度(°)', ang, -180, 180, 1, v => {
+    const rad = v * Math.PI/180;
+    const L = Math.hypot(o.x2-o.x, o.y2-o.y);
+    o.x2 = o.x + Math.cos(rad)*L;
+    o.y2 = o.y + Math.sin(rad)*L;
+  });
+}
+
+function buildProps(){
+  propBox.innerHTML = '';
+
+  if(brushMode){
+    const head = document.createElement('div');
+    head.className = 'obj-head';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = BRUSH_DEFAULT.color;
+    head.appendChild(dot);
+    head.appendChild(document.createTextNode('毛笔'));
+    propBox.appendChild(head);
+    const c = document.createElement('input');
+    c.type = 'color';
+    c.value = BRUSH_DEFAULT.color;
+    c.addEventListener('input', ()=> BRUSH_DEFAULT.color = c.value);
+    row('墨色', c);
+    addNumber('笔粗', BRUSH_DEFAULT.lw, 1, 30, 0.5, v => BRUSH_DEFAULT.lw = v);
+    addTip('在画布上按住并拖动即可绘制。\n可书写文字或画任意图形。\n按 Esc 或再次点击“毛笔”退出。');
+    const clr = document.createElement('button');
+    clr.className = 'del';
+    clr.textContent = '清除全部手绘';
+    clr.style.color = '#d9483f';
+    clr.style.borderColor = '#f3cfcc';
+    clr.style.background = '#fff6f5';
+    clr.addEventListener('click', ()=>{
+      if(!strokes.length) return;
+      saveSnapshot();
+      strokes = [];
+    });
+    propBox.appendChild(clr);
+    return;
+  }
+
+  if(eraserMode){
+    const head = document.createElement('div');
+    head.className = 'obj-head';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = '#6b7280';
+    head.appendChild(dot);
+    head.appendChild(document.createTextNode('橡皮擦'));
+    propBox.appendChild(head);
+    addTip('在画布上按住并拖动，可擦除经过的手绘笔画。\n按 Esc 或再次点击“橡皮擦”退出。');
+    return;
+  }
+
+  if(!selected){
+    const p = document.createElement('p');
+    p.className = 'hint';
+    p.innerHTML = '<b>点击物体</b> 编辑属性<br><br>' +
+                  '<b>拖动</b> 移动位置<br>' +
+                  '<b>Delete</b> 删除物体<br><br>' +
+                  '<b>撤回 / 恢复</b> 或 Ctrl+Z / Ctrl+Y<br><br>' +
+                  '<b>毛笔</b> 可手写文字或画图<br>' +
+                  '<b>橡皮擦</b> 擦除手绘笔画<br><br>' +
+                  '<b>下一页 / 上一页</b> 切换页面';
+    propBox.appendChild(p);
+    return;
+  }
+  const o = selected;
+
+  const head = document.createElement('div');
+  head.className = 'obj-head';
+  const dot = document.createElement('span');
+  dot.className = 'dot'; dot.style.background = o.color;
+  head.appendChild(dot);
+  head.appendChild(document.createTextNode(
+    o.type === 'field'
+      ? (o.field === 'B' ? '磁场区域' : '电场区域')
+      : NAMES[o.type]
+  ));
+  propBox.appendChild(head);
+  addColor(o.color, v => { o.color = v; dot.style.background = v; });
+
+  switch(o.type){
+    case 'circleShape':
+      addNumber('直径', o.w, 20, 600, 1, v => { o.w = v; o.h = v; });
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('虚线半径用于指示旋转方向');
+      break;
+    case 'squareShape':
+      addNumber('边长', o.w, 20, 500, 1, v => { o.w = v; o.h = v; });
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('正方形四边相等，边长自动同步');
+      break;
+    case 'rectShape':
+      addNumber('宽度', o.w, 20, 700, 1, v => o.w = v);
+      addNumber('高度', o.h, 20, 700, 1, v => o.h = v);
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('宽高可独立调节');
+      break;
+    case 'equiTri':
+      addNumber('底边', o.w, 30, 700, 1, v => { o.w = v; o.h = v * Math.sqrt(3) / 2; });
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('等边三角形：高 = 底边 × √3 / 2\n自动同步，尖端朝上');
+      break;
+    case 'rightTri':
+      addNumber('宽度', o.w, 20, 700, 1, v => o.w = v);
+      addNumber('高度', o.h, 20, 700, 1, v => o.h = v);
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('直角在左下角，带直角标记');
+      break;
+    case 'ellipseShape':
+      addNumber('长轴', o.w, 30, 700, 1, v => o.w = v);
+      addNumber('短轴', o.h, 20, 700, 1, v => o.h = v);
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('旋转可改变椭圆的倾斜方向');
+      break;
+    case 'parabolaShape':
+      addNumber('宽度', o.w, 40, 700, 1, v => o.w = v);
+      addNumber('高度', o.h, 40, 600, 1, v => o.h = v);
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('默认开口向上，顶点在底部中心\n旋转可改变开口方向');
+      break;
+    case 'sphere':
+      addNumber('半径', o.w/2, 10, 220, 1, v => { o.w = v*2; o.h = v*2; });
+      addNumber('不透明度', o.opacity, 0.05, 1, 0.05, v => o.opacity = v);
+      addTip('半透明球体，可看到背后的物体');
+      break;
+    case 'cube':
+      addNumber('边长', o.w, 20, 400, 1, v => { o.w = v; o.h = v; });
+      addNumber('深度', o.depth, 6, 160, 1, v => o.depth = v);
+      addNumber('不透明度', o.opacity, 0.05, 1, 0.05, v => o.opacity = v);
+      addTip('半透明正方体，深度表示斜向拉伸量');
+      break;
+    case 'cuboid':
+      addNumber('宽度', o.w, 20, 500, 1, v => o.w = v);
+      addNumber('高度', o.h, 20, 500, 1, v => o.h = v);
+      addNumber('深度', o.depth, 6, 160, 1, v => o.depth = v);
+      addNumber('不透明度', o.opacity, 0.05, 1, 0.05, v => o.opacity = v);
+      addTip('半透明长方体，宽高可独立调节');
+      break;
+    case 'cone':
+      addNumber('底面直径', o.w, 30, 500, 1, v => o.w = v);
+      addNumber('高度', o.h, 30, 500, 1, v => o.h = v);
+      addNumber('不透明度', o.opacity, 0.05, 1, 0.05, v => o.opacity = v);
+      addTip('半透明圆锥，底部为椭圆透视');
+      break;
+    case 'tetrahedron':
+      addNumber('宽度', o.w, 30, 500, 1, v => o.w = v);
+      addNumber('高度', o.h, 30, 500, 1, v => o.h = v);
+      addNumber('不透明度', o.opacity, 0.05, 1, 0.05, v => o.opacity = v);
+      addTip('半透明正四面体，内部线表示后顶点');
+      break;
+    case 'cylinder':
+      addNumber('底面直径', o.w, 30, 500, 1, v => o.w = v);
+      addNumber('高度', o.h, 30, 500, 1, v => o.h = v);
+      addNumber('不透明度', o.opacity, 0.05, 1, 0.05, v => o.opacity = v);
+      addTip('半透明圆柱体，上下底面为椭圆');
+      break;
+    case 'ball':
+      addNumber('半径', o.w/2, 6, 220, 1, v => { o.w = v*2; o.h = v*2; });
+      break;
+    case 'block':
+      addNumber('宽度', o.w, 12, 900, 1, v => o.w = v);
+      addNumber('高度', o.h, 12, 900, 1, v => o.h = v);
+      break;
+    case 'cart':
+      addNumber('车身长', o.w, 60, 600, 1, v => o.w = v);
+      addNumber('整体高', o.h, 30, 260, 1, v => o.h = v);
+      addTip('小车带两个轮子，适合“小车+滑轮+纸带”实验');
+      break;
+    case 'weight':
+      addNumber('宽度', o.w, 24, 200, 1, v => o.w = v);
+      addNumber('高度', o.h, 30, 260, 1, v => o.h = v);
+      addTip('钩码常用于悬挂、连接体、受力分析');
+      break;
+    case 'incline': {
+      addNumber('倾角(°)', o.angle, 5, 85, 0.5, v => {
+        const bottom = o.y + o.h;
+        const rad = v * Math.PI/180;
+        let nh = o.w * Math.tan(rad);
+        if(nh > MAX_INCLINE_H){ nh = MAX_INCLINE_H; o.w = nh / Math.tan(rad); }
+        o.angle = v; o.h = nh; o.y = bottom - o.h;
+      });
+      addNumber('底边长', o.w, 60, 900, 1, v => {
+        const bottom = o.y + o.h;
+        o.w = v;
+        let nh = o.w * Math.tan(o.angle * Math.PI/180);
+        if(nh > MAX_INCLINE_H){ nh = MAX_INCLINE_H; o.w = nh / Math.tan(o.angle * Math.PI/180); }
+        o.h = nh; o.y = bottom - o.h;
+      });
+      addTip('倾角 ' + o.angle.toFixed(1) + '°，高 ' + Math.round(o.h) + ' px');
+      break;
+    }
+    case 'board':
+      addNumber('长度', o.w, 40, 950, 1, v => o.w = v);
+      addNumber('厚度', o.h, 8, 200, 1, v => o.h = v);
+      break;
+    case 'belt':
+      addNumber('长度', o.w, 100, 950, 1, v => o.w = v);
+      addNumber('宽度', o.h, 28, 200, 1, v => o.h = v);
+      addTip('传送带为透明框体，可叠加物块或小球');
+      break;
+    case 'arrow':
+      addSegControls(o);
+      addNumber('线宽', o.lw, 1, 10, 0.5, v => o.lw = v);
+      addTip('拖拽两端圆点可自由调整');
+      break;
+    case 'solidLine':
+      addSegControls(o);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('实线直线，拖拽两端圆点可调整');
+      break;
+    case 'dashedLine':
+      addSegControls(o);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      addTip('虚线直线，拖拽两端圆点可调整');
+      break;
+    case 'arc': {
+      addNumber('半径', o.r, 10, 500, 1, v => o.r = v);
+      addNumber('起始角(°)', o.startAngle, -360, 360, 1, v => o.startAngle = v);
+      addNumber('终止角(°)', o.endAngle, -360, 360, 1, v => o.endAngle = v);
+      addNumber('线宽', o.lw, 1, 12, 0.5, v => o.lw = v);
+      const dAng = Math.abs(o.endAngle - o.startAngle);
+      const arcLen = Math.PI * o.r * dAng / 180;
+      addTip('圆心角 ' + dAng.toFixed(1) + '°　弧长 ≈ ' + arcLen.toFixed(1) + ' px\n' +
+             '角度 0° 在正右方，顺时针为正');
+      break;
+    }
+    case 'rope':
+      addSegControls(o);
+      addNumber('绳粗', o.lw, 1, 10, 0.5, v => o.lw = v);
+      addNumber('下垂量', o.sag, 0, 100, 1, v => o.sag = v);
+      addTip(o.sag > 1 ? '绳呈悬垂状态' : '下垂量为 0 时绳子绷直');
+      break;
+    case 'rod':
+      addSegControls(o);
+      addNumber('杆粗', o.lw, 3, 30, 0.5, v => o.lw = v);
+      addTip('轻杆为刚性直杆，长度可自由拉伸');
+      break;
+    case 'spring': {
+      addSegControls(o);
+      const curLen = Math.hypot(o.x2-o.x, o.y2-o.y);
+      addNumber('原长', o.restLen, 20, 600, 1, v => o.restLen = v);
+      addNumber('劲度系数', o.k, 0.1, 1000, 0.1, v => o.k = v);
+      addNumber('弹簧线宽', o.lw, 1, 8, 0.5, v => o.lw = v);
+      addNumber('线圈数', o.coils, 4, 30, 1, v => o.coils = Math.round(v));
+      const def = curLen - o.restLen;
+      addTip('当前长度 ' + Math.round(curLen) + ' px　' +
+             (def >= 0 ? '伸长 ' : '压缩 ') + Math.abs(Math.round(def)) + ' px');
+      break;
+    }
+    case 'pulley':
+      addNumber('外半径', o.r, 16, 220, 1, v => o.r = v);
+      addNumber('轮缘宽', o.th, 4, 60, 1, v => o.th = Math.min(v, o.r*0.55));
+      addTip('滑轮可配合轻绳 / 轻杆绕制使用');
+      break;
+    case 'label':
+      addText('文字', o.text, v => { o.text = v; });
+      addNumber('字号', o.fs, 10, 80, 1, v => o.fs = v);
+      break;
+    case 'axes2D': {
+      addNumber('x轴长度', o.w, 40, 900, 1, v => o.w = v);
+      addNumber('y轴长度', o.h, 40, 700, 1, v => o.h = v);
+      addNumber('刻度间距', o.tick, 5, 200, 1, v => o.tick = v);
+      addNumber('线宽', o.lw, 1, 8, 0.5, v => o.lw = v);
+      addText('x轴标签', o.labelX, v => o.labelX = v);
+      addText('y轴标签', o.labelY, v => o.labelY = v);
+      addTip('原点在交点处，拖动可整体移动');
+      break;
+    }
+    case 'axes1D': {
+      addNumber('长度', o.w, 40, 900, 1, v => o.w = v);
+      addNumber('刻度间距', o.tick, 5, 200, 1, v => o.tick = v);
+      addNumber('线宽', o.lw, 1, 8, 0.5, v => o.lw = v);
+      addTip('一维数轴，可用于表示位置、速度、时间等');
+      break;
+    }
+    case 'pipe':
+      addNumber('外半径', o.r, 12, 260, 1, v => o.r = v);
+      addNumber('管壁厚', o.th, 2, 60, 1, v => o.th = Math.min(v, o.r-4));
+      addTip('管道整片圆形区域都可点击选中');
+      break;
+    case 'halfGroove':
+      addNumber('外半径', o.r, 20, 300, 1, v => o.r = v);
+      addNumber('槽壁厚', o.th, 2, 60, 1, v => o.th = Math.min(v, o.r-4));
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addTip('默认开口向下（拱形），旋转可改变朝向');
+      break;
+    case 'quarterGroove':
+      addNumber('外半径', o.r, 20, 300, 1, v => o.r = v);
+      addNumber('槽壁厚', o.th, 2, 60, 1, v => o.th = Math.min(v, o.r-4));
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addTip('默认开口朝左上，旋转可自由调整');
+      break;
+    case 'circleTrack':
+      addNumber('半径', o.r, 20, 300, 1, v => o.r = v);
+      addNumber('轨道厚', o.th, 3, 40, 1, v => o.th = Math.min(v, o.r-4));
+      addTip('竖直圆轨道可用于圆周运动、向心力分析');
+      break;
+    case 'halfTrack':
+      addNumber('半径', o.r, 20, 300, 1, v => o.r = v);
+      addNumber('轨道厚', o.th, 3, 40, 1, v => o.th = Math.min(v, o.r-4));
+      addNumber('旋转角(°)', o.rot || 0, -360, 360, 1, v => o.rot = v);
+      addTip('半圆轨道可旋转调整开口方向');
+      break;
+    case 'curvedTrack':
+      addNumber('宽度', o.w, 60, 900, 1, v => o.w = v);
+      addNumber('高度', o.h, 60, 600, 1, v => o.h = v);
+      addNumber('轨道厚', o.th, 6, 40, 1, v => o.th = v);
+      addTip('弯曲轨道 / 滑梯，适合能量守恒、曲线运动');
+      break;
+    case 'wall':
+      addNumber('厚度', o.w, 12, 120, 1, v => o.w = v);
+      addNumber('高度', o.h, 40, 600, 1, v => o.h = v);
+      addTip('墙壁提供竖直约束面，可配合物块使用');
+      break;
+    case 'ground':
+      addNumber('长度', o.w, 80, 1000, 1, v => o.w = v);
+      addNumber('厚度', o.h, 12, 80, 1, v => o.h = v);
+      addTip('地面 / 桌面，提供水平支撑面');
+      break;
+    case 'anchor':
+      addNumber('半径', o.r, 8, 60, 1, v => o.r = v);
+      addTip('固定点 / 铰链 / 转轴，可配合轻杆或单摆');
+      break;
+    case 'field': {
+      addSelect('类型', [['B','磁场 B'], ['E','电场 E']], o.field, v => {
+        o.field = v; o.dir = v === 'B' ? 'in' : 'right'; buildProps();
+      });
+      addSelect('形状',
+        [['rect','矩形'], ['circle','圆形'], ['ring','环形']],
+        o.shape, v => { o.shape = v; });
+      const dirOpts = o.field === 'B' ? FIELD_DIR_B : FIELD_DIR_E;
+      addSelect('方向', dirOpts, o.dir, v => o.dir = v);
+      addNumber('宽度', o.w, 60, 900, 1, v => o.w = v);
+      addNumber('高度', o.h, 60, 900, 1, v => o.h = v);
+      addTip(o.field === 'B'
+        ? '⊗ 垂直纸面向里　⊙ 垂直纸面向外'
+        : '箭头表示电场方向');
+      break;
+    }
+    case 'charge':
+      addSelect('电荷', [['+','正电荷 +'], ['-','负电荷 −'], ['0','中性 0']],
+        o.q, v => o.q = v);
+      addNumber('半径', o.w/2, 8, 100, 1, v => { o.w = v*2; o.h = v*2; });
+      break;
+    case 'pendulum':
+    case 'conePendulum': {
+      addNumber('摆长', o.len, 40, 500, 1, v => o.len = v);
+      addNumber('偏角(°)', o.tilt, -80, 80, 1, v => o.tilt = v);
+      addNumber('摆球半径', o.r, 8, 60, 1, v => o.r = v);
+      if(o.type === 'pendulum'){
+        addTip('单摆：由轻绳与摆球组成，适合研究简谐运动');
+      } else {
+        addTip('圆锥摆：摆球做水平圆周运动，轨迹用虚线表示');
+      }
+      break;
+    }
+    case 'battery': case 'switch': case 'resistor': case 'rheostat':
+    case 'bulb': case 'ammeter': case 'voltmeter': case 'wire':
+    case 'groundSym': case 'capacitor': case 'inductor':
+    case 'diode': case 'multimeter': {
+      addNumber('宽度', o.w, 40, 320, 1, v => o.w = v);
+      addNumber('高度', o.h, 16, 220, 1, v => o.h = v);
+      addNumber('线宽', o.lw, 1, 8, 0.5, v => o.lw = v);
+      if(o.type === 'switch'){
+        addSelect('状态',
+          [['open','断开'], ['closed','闭合']],
+          o.closed ? 'closed' : 'open',
+          v => o.closed = (v === 'closed'));
+        addTip('开关断开时杠杆抬起，闭合时杠杆搭在两端子上');
+      }
+      if(o.type === 'rheostat'){
+        addNumber('滑片位置', o.sliderPos, -1, 1, 0.05, v => o.sliderPos = v);
+        addTip('滑片位置 -1 靠左，0 居中，1 靠右');
+      }
+      if(o.type === 'battery')   addTip('长极板为正极，短极板为负极');
+      if(o.type === 'resistor')  addTip('矩形框表示定值电阻');
+      if(o.type === 'bulb')      addTip('圆内画叉表示灯泡');
+      if(o.type === 'ammeter')   addTip('圆内标 A 表示电流表，串联在电路中');
+      if(o.type === 'voltmeter') addTip('圆内标 V 表示电压表，并联在待测元件两端');
+      if(o.type === 'wire')      addTip('导线可用于连接各电路元件');
+      if(o.type === 'groundSym') addTip('接地符号，表示电势为零');
+      if(o.type === 'capacitor') addTip('两条平行线表示电容器');
+      if(o.type === 'inductor')  addTip('连续半圆表示电感线圈');
+      if(o.type === 'diode')     addTip('三角形加竖线表示二极管，三角尖端为负极');
+      if(o.type === 'multimeter')addTip('多用电表，可测电压、电流、电阻等');
+      break;
+    }
+  }
+
+  const del = document.createElement('button');
+  del.className = 'del';
+  del.textContent = '删除该物体';
+  del.addEventListener('click', ()=>{
+    saveSnapshot();
+    objects = objects.filter(x => x !== o);
+    selected = null;
+    buildProps();
+  });
+  propBox.appendChild(del);
+}
+
+/* ====================== 按钮 ====================== */
+document.getElementById('gridChk').addEventListener('change', e => {
+  showGrid = e.target.checked;
+});
+document.getElementById('snapChk').addEventListener('change', e => {
+  snapGrid = e.target.checked;
+});
+
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  const prev = selected;
+  selected = null;
+  renderScene(performance.now());
+  const url = cv.toDataURL('image/png');
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '物理情景_' + Date.now() + '.png';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  selected = prev;
+});
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if(objects.length === 0 && strokes.length === 0) return;
+  saveSnapshot();
+  objects = [];
+  strokes = [];
+  currentStroke = null;
+  selected = null;
+  drag = null;
+  buildProps();
+});
+
+/* ====================== 初始示例 ====================== */
+function initDemo(){
+  const inc = { id: uid++, type:'incline', x: 170, y: 340, w: 320, h: 0, angle: 34, color:'#94a3b8' };
+  inc.h = inc.w * Math.tan(inc.angle * Math.PI/180);
+  const ball = { id: uid++, type:'ball', x: 206, y: 292, w: 56, h: 56, color:'#ef4444' };
+
+  const ground = { id: uid++, type:'ground', x: 60, y: 540, w: 360, h: 28, color:'#94a3b8' };
+  const cart = { id: uid++, type:'cart', x: 130, y: 470, w: 130, h: 66, color:'#3b82f6' };
+
+  const pend = { id: uid++, type:'pendulum', x: 140, y: 90, len:170, tilt:25, r:20, color:'#ef4444' };
+
+  const sphere = { id: uid++, type:'sphere', x: 640, y: 400, w: 90, h: 90,
+                   color:'#3b82f6', opacity:0.42 };
+  const cube   = { id: uid++, type:'cube', x: 760, y: 420, w: 80, h: 80, depth:28,
+                   color:'#10b981', opacity:0.38 };
+  const cyl    = { id: uid++, type:'cylinder', x: 420, y: 400, w: 80, h: 100,
+                   color:'#0ea5e9', opacity:0.4 };
+
+  const battery = { id: uid++, type:'battery', x: 430, y: 120, w: 110, h: 60,
+                    lw:3, color:'#dc2626' };
+  const sw      = { id: uid++, type:'switch', x: 580, y: 126, w: 100, h: 46,
+                    lw:3, color:'#1e293b', closed:false };
+  const bulb    = { id: uid++, type:'bulb', x: 730, y: 100, w: 90, h: 90,
+                    lw:3, color:'#1e293b' };
+
+  objects.push(inc, ball, ground, cart, pend,
+               sphere, cube, cyl,
+               battery, sw, bulb);
+}
+
+initDemo();
+
+/* 初始化第一页 */
+pages = [{
+  objects: JSON.parse(JSON.stringify(objects)),
+  strokes: [],
+  history: [],
+  redoStack: []
+}];
+currentPageIndex = 0;
+
+buildProps();
+updateUndoRedoBtns();
+updatePageBtns();
+requestAnimationFrame(loop);
+
+})();
+</script>
+  <script>
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+  
+  document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.keyCode === 27) { saveScrollAndReturn(); }
+  });
+  
+  document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+  
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
