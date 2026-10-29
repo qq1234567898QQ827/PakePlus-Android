@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牛顿环干涉动画 - 高中物理（3D立体可旋转）</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel: #161b22;
+            --panel2: #1c2333;
+            --border: #30363d;
+            --text: #e6edf3;
+            --text-secondary: #8b949e;
+            --accent: #58a6ff;
+            --accent-hover: #79c0ff;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --radius: 16px;
+            --radius-sm: 10px;
+            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            background-image: radial-gradient(ellipse at 30% 20%, #1a2332 0%, #0d1117 70%);
+        }
+
+        .container {
+            max-width: 1100px;
+            width: 100%;
+            background: var(--panel);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 16px 20px 20px;
+            border: 1px solid var(--border);
+        }
+
+        .main-content {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            flex-shrink: 0;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 2px solid var(--border);
+            background: #000;
+            box-shadow: 0 0 30px rgba(88, 166, 255, 0.08);
+            width: 360px;
+            height: 360px;
+        }
+
+        .canvas-wrapper canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ringsCanvas {
+            cursor: crosshair;
+        }
+
+        .canvas-label {
+            position: absolute;
+            top: 6px;
+            left: 8px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.7);
+            background: rgba(0, 0, 0, 0.6);
+            padding: 2px 8px;
+            border-radius: 16px;
+            letter-spacing: 0.5px;
+            pointer-events: none;
+            backdrop-filter: blur(4px);
+            z-index: 2;
+        }
+
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            flex: 1;
+            min-width: 280px;
+            max-width: 420px;
+        }
+
+        .three-view-wrapper {
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 2px solid var(--border);
+            background: #0a0e14;
+            box-shadow: 0 0 20px rgba(88, 166, 255, 0.05);
+            position: relative;
+            height: 360px;
+        }
+
+        .three-view-wrapper canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls {
+            background: var(--panel2);
+            border-radius: var(--radius-sm);
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+        }
+
+        .control-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 40px;
+            text-align: right;
+            letter-spacing: 0.5px;
+        }
+
+        .wavelength-slider {
+            flex: 1;
+            min-width: 140px;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #8b5cf6, #3b82f6, #06b6d4, #22c55e, #eab308, #f97316, #ef4444);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .wavelength-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #333;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            transition: transform 0.15s ease;
+        }
+
+        .wavelength-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .wavelength-slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid #333;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        .wavelength-value {
+            font-weight: 700;
+            font-size: 0.85rem;
+            min-width: 50px;
+            text-align: center;
+            color: #e6edf3;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.5px;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .preset-btn {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text);
+            position: relative;
+            overflow: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .preset-btn:active {
+            transform: translateY(0);
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .preset-btn.active {
+            border-color: #fff;
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+        }
+
+        .preset-btn .btn-color-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 4px;
+            vertical-align: middle;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            transition: all 0.25s ease;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .action-btn.active {
+            background: rgba(88, 166, 255, 0.2);
+            border-color: var(--accent);
+            color: #79c0ff;
+        }
+
+        .action-btn .icon {
+            font-size: 0.9rem;
+        }
+
+        .color-picker-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .color-picker-wrapper input[type="color"] {
+            width: 28px;
+            height: 28px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            background: transparent;
+            padding: 1px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-picker-wrapper input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .color-picker-wrapper input[type="color"]::-moz-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .tooltip {
+            position: fixed;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 6px 10px;
+            border-radius: 5px;
+            font-size: 0.7rem;
+            line-height: 1.4;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: none;
+            white-space: nowrap;
+            letter-spacing: 0.3px;
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.3px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                padding: 8px;
+            }
+            .main-content {
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            .canvas-wrapper {
+                width: 90vw;
+                max-width: 400px;
+                height: auto;
+                aspect-ratio: 1/1;
+            }
+            .side-panel {
+                max-width: 100%;
+                width: 100%;
+            }
+            .three-view-wrapper {
+                height: 280px;
+            }
+            .control-row {
+                gap: 6px;
+            }
+            .control-label {
+                min-width: 30px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+  <style>
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div><div style="position:fixed;top:0;left:0;right:0;height:34px;line-height:34px;text-align:center;background:linear-gradient(90deg,rgba(15,25,38,0.92),rgba(25,45,65,0.92),rgba(15,25,38,0.92));color:#8fd8ff;font-size:15px;letter-spacing:2px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,0.5);font-family:'PingFang SC','Microsoft YaHei',sans-serif;pointer-events:none;">齐老师动画抖音 35320300542</div>
+    <div class="container">
+        <div class="main-content">
+            <!-- 左侧：牛顿环俯视图 -->
+            <div class="canvas-wrapper">
+                <canvas id="ringsCanvas" width="480" height="480"></canvas>
+                <div class="canvas-label" id="viewLabel">俯视图 · 反射光干涉</div>
+            </div>
+
+            <!-- 右侧：3D立体视图 -->
+            <div class="side-panel">
+                <div class="three-view-wrapper" id="threeContainer">
+                    <div class="canvas-label" style="font-size:0.65rem; z-index:3;">3D立体视图 · 鼠标拖拽旋转</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制面板 -->
+        <div class="controls">
+            <div class="control-row">
+                <span class="control-label">波长</span>
+                <input type="range" class="wavelength-slider" id="wavelengthSlider" min="400" max="700" value="589" step="1">
+                <span class="wavelength-value" id="wavelengthDisplay">589 nm</span>
+            </div>
+
+            <div class="control-row">
+                <span class="control-label">预设</span>
+                <div class="preset-buttons" id="presetButtons">
+                    <button class="preset-btn" data-wavelength="420" title="紫光 420nm">
+                        <span class="btn-color-dot" style="background:#8b5cf6;"></span>紫
+                    </button>
+                    <button class="preset-btn" data-wavelength="470" title="蓝光 470nm">
+                        <span class="btn-color-dot" style="background:#3b82f6;"></span>蓝
+                    </button>
+                    <button class="preset-btn" data-wavelength="500" title="青光 500nm">
+                        <span class="btn-color-dot" style="background:#06b6d4;"></span>青
+                    </button>
+                    <button class="preset-btn" data-wavelength="532" title="绿光 532nm">
+                        <span class="btn-color-dot" style="background:#22c55e;"></span>绿
+                    </button>
+                    <button class="preset-btn" data-wavelength="580" title="黄光 580nm">
+                        <span class="btn-color-dot" style="background:#eab308;"></span>黄
+                    </button>
+                    <button class="preset-btn" data-wavelength="589" title="钠黄光 589nm">
+                        <span class="btn-color-dot" style="background:#f5c242;"></span>钠黄
+                    </button>
+                    <button class="preset-btn" data-wavelength="633" title="氦氖激光 633nm">
+                        <span class="btn-color-dot" style="background:#ef4444;"></span>氦氖
+                    </button>
+                    <button class="preset-btn" data-wavelength="650" title="红光 650nm">
+                        <span class="btn-color-dot" style="background:#ef4444;"></span>红
+                    </button>
+                </div>
+            </div>
+
+            <div class="control-row">
+                <span class="control-label">模式</span>
+                <div class="btn-group">
+                    <button class="action-btn active" id="monoBtn" title="单色光模式">
+                        <span class="icon">🔵</span> 单色光
+                    </button>
+                    <button class="action-btn" id="whiteBtn" title="白光模式（RGB三色叠加）">
+                        <span class="icon">🌈</span> 白光
+                    </button>
+                </div>
+                <div class="color-picker-wrapper" title="自定义颜色">
+                    <input type="color" id="colorPicker" value="#f5c242">
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-note">
+            💡 提示：鼠标拖拽3D视图旋转视角 · 拖动滑块或点击预设按钮调节波长 · 白光模式展示彩色牛顿环
+        </div>
+    </div>
+
+    <!-- 鼠标提示框 -->
+    <div class="tooltip" id="tooltip"></div>
+
+    <!-- 引入Three.js和OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <script>
+        (function() {
+            // ==================== 常量 ====================
+            const CANVAS_SIZE = 480;
+            const CENTER = CANVAS_SIZE / 2;
+            const MAX_RADIUS_PX = CANVAS_SIZE / 2 - 4;
+            const R_CURVATURE = 0.5;
+            const BASE_LAMBDA = 550;
+            const BASE_C = 2600; // 从2200增加到2600，使环纹进一步稀疏
+
+            // ==================== DOM元素 ====================
+            const ringsCanvas = document.getElementById('ringsCanvas');
+            const ringsCtx = ringsCanvas.getContext('2d');
+            const wavelengthSlider = document.getElementById('wavelengthSlider');
+            const wavelengthDisplay = document.getElementById('wavelengthDisplay');
+            const presetButtons = document.querySelectorAll('.preset-btn');
+            const monoBtn = document.getElementById('monoBtn');
+            const whiteBtn = document.getElementById('whiteBtn');
+            const colorPicker = document.getElementById('colorPicker');
+            const tooltip = document.getElementById('tooltip');
+            const threeContainer = document.getElementById('threeContainer');
+
+            // ==================== 状态 ====================
+            let currentWavelength = 589;
+            let isWhiteMode = false;
+
+            // ==================== 波长转RGB ====================
+            function wavelengthToRGB(wavelength) {
+                let r, g, b;
+                if (wavelength >= 380 && wavelength < 440) {
+                    r = -(wavelength - 440) / (440 - 380);
+                    g = 0;
+                    b = 1;
+                } else if (wavelength >= 440 && wavelength < 490) {
+                    r = 0;
+                    g = (wavelength - 440) / (490 - 440);
+                    b = 1;
+                } else if (wavelength >= 490 && wavelength < 510) {
+                    r = 0;
+                    g = 1;
+                    b = -(wavelength - 510) / (510 - 490);
+                } else if (wavelength >= 510 && wavelength < 580) {
+                    r = (wavelength - 510) / (580 - 510);
+                    g = 1;
+                    b = 0;
+                } else if (wavelength >= 580 && wavelength < 645) {
+                    r = 1;
+                    g = -(wavelength - 645) / (645 - 580);
+                    b = 0;
+                } else if (wavelength >= 645 && wavelength <= 780) {
+                    r = 1;
+                    g = 0;
+                    b = 0;
+                } else {
+                    r = 0;
+                    g = 0;
+                    b = 0;
+                }
+                let factor;
+                if (wavelength >= 380 && wavelength < 420) {
+                    factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380);
+                } else if (wavelength >= 420 && wavelength <= 700) {
+                    factor = 1;
+                } else if (wavelength > 700 && wavelength <= 780) {
+                    factor = 0.3 + 0.7 * (780 - wavelength) / (780 - 700);
+                } else {
+                    factor = 0;
+                }
+                return [
+                    Math.round(r * factor * 255),
+                    Math.round(g * factor * 255),
+                    Math.round(b * factor * 255)
+                ];
+            }
+
+            function rgbToWavelength(hex) {
+                const r = parseInt(hex.slice(1, 3), 16) / 255;
+                const g = parseInt(hex.slice(3, 5), 16) / 255;
+                const b = parseInt(hex.slice(5, 7), 16) / 255;
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                const delta = max - min;
+                let hue = 0;
+                if (delta === 0) hue = 0;
+                else if (max === r) hue = ((g - b) / delta) % 6;
+                else if (max === g) hue = (b - r) / delta + 2;
+                else hue = (r - g) / delta + 4;
+                hue = Math.round(hue * 60);
+                if (hue < 0) hue += 360;
+                if (hue > 360) hue -= 360;
+                const hueMap = [
+                    [0, 650],
+                    [30, 620],
+                    [60, 580],
+                    [90, 550],
+                    [120, 532],
+                    [150, 515],
+                    [180, 500],
+                    [210, 485],
+                    [240, 470],
+                    [270, 450],
+                    [300, 420],
+                    [330, 400],
+                    [360, 650]
+                ];
+                let wavelength = 550;
+                for (let i = 0; i < hueMap.length - 1; i++) {
+                    if (hue >= hueMap[i][0] && hue <= hueMap[i + 1][0]) {
+                        const t = (hue - hueMap[i][0]) / (hueMap[i + 1][0] - hueMap[i][0]);
+                        wavelength = hueMap[i][1] + t * (hueMap[i + 1][1] - hueMap[i][1]);
+                        break;
+                    }
+                }
+                return Math.round(wavelength);
+            }
+
+            function getColorName(wavelength) {
+                const names = [
+                    [380, 430, '紫光'],
+                    [430, 470, '蓝紫光'],
+                    [470, 490, '蓝光'],
+                    [490, 510, '青光'],
+                    [510, 540, '绿光'],
+                    [540, 570, '黄绿光'],
+                    [570, 590, '黄光'],
+                    [590, 610, '橙黄光'],
+                    [610, 650, '橙红光'],
+                    [650, 700, '红光'],
+                    [700, 780, '深红光']
+                ];
+                for (const [min, max, name] of names) {
+                    if (wavelength >= min && wavelength <= max) return name;
+                }
+                return '可见光';
+            }
+
+            function calculateRingRadius(k, wavelengthNm) {
+                const lambdaM = wavelengthNm * 1e-9;
+                const rMeters = Math.sqrt(k * lambdaM * R_CURVATURE);
+                return rMeters * 1000;
+            }
+
+            // ==================== 绘制2D牛顿环 ====================
+            function drawMonoNewtonRings(imageData, wavelengthNm) {
+                const data = imageData.data;
+                const C = BASE_C * (wavelengthNm / BASE_LAMBDA);
+                const sigma = MAX_RADIUS_PX * 0.75;
+                const [baseR, baseG, baseB] = wavelengthToRGB(wavelengthNm);
+                for (let y = 0; y < CANVAS_SIZE; y++) {
+                    for (let x = 0; x < CANVAS_SIZE; x++) {
+                        const dx = x - CENTER;
+                        const dy = y - CENTER;
+                        const r2 = dx * dx + dy * dy;
+                        const r = Math.sqrt(r2);
+                        const idx = (y * CANVAS_SIZE + x) * 4;
+                        if (r > MAX_RADIUS_PX + 20) {
+                            data[idx] = 0;
+                            data[idx + 1] = 0;
+                            data[idx + 2] = 0;
+                            data[idx + 3] = 255;
+                            continue;
+                        }
+                        const phase = Math.PI * r2 / C;
+                        const intensity = Math.sin(phase) * Math.sin(phase);
+                        const gaussianFactor = Math.exp(-r2 / (2 * sigma * sigma));
+                        const finalIntensity = intensity * gaussianFactor;
+                        data[idx] = Math.round(baseR * finalIntensity);
+                        data[idx + 1] = Math.round(baseG * finalIntensity);
+                        data[idx + 2] = Math.round(baseB * finalIntensity);
+                        data[idx + 3] = 255;
+                    }
+                }
+            }
+
+            function drawWhiteNewtonRings(imageData) {
+                const data = imageData.data;
+                const sigma = MAX_RADIUS_PX * 0.7;
+                const wavelengths = [
+                    { lambda: 650, rgb: [255, 60, 60] },
+                    { lambda: 532, rgb: [60, 255, 80] },
+                    { lambda: 450, rgb: [60, 100, 255] }
+                ];
+                for (let y = 0; y < CANVAS_SIZE; y++) {
+                    for (let x = 0; x < CANVAS_SIZE; x++) {
+                        const dx = x - CENTER;
+                        const dy = y - CENTER;
+                        const r2 = dx * dx + dy * dy;
+                        const r = Math.sqrt(r2);
+                        const idx = (y * CANVAS_SIZE + x) * 4;
+                        if (r > MAX_RADIUS_PX + 20) {
+                            data[idx] = 0;
+                            data[idx + 1] = 0;
+                            data[idx + 2] = 0;
+                            data[idx + 3] = 255;
+                            continue;
+                        }
+                        const gaussianFactor = Math.exp(-r2 / (2 * sigma * sigma));
+                        let totalR = 0,
+                            totalG = 0,
+                            totalB = 0;
+                        for (const wl of wavelengths) {
+                            const C = BASE_C * (wl.lambda / BASE_LAMBDA);
+                            const phase = Math.PI * r2 / C;
+                            const intensity = Math.sin(phase) * Math.sin(phase);
+                            const fi = intensity * gaussianFactor;
+                            totalR += wl.rgb[0] * fi;
+                            totalG += wl.rgb[1] * fi;
+                            totalB += wl.rgb[2] * fi;
+                        }
+                        data[idx] = Math.min(255, Math.round(totalR));
+                        data[idx + 1] = Math.min(255, Math.round(totalG));
+                        data[idx + 2] = Math.min(255, Math.round(totalB));
+                        data[idx + 3] = 255;
+                    }
+                }
+            }
+
+            function drawRings2D() {
+                const imageData = ringsCtx.createImageData(CANVAS_SIZE, CANVAS_SIZE);
+                if (isWhiteMode) {
+                    drawWhiteNewtonRings(imageData);
+                } else {
+                    drawMonoNewtonRings(imageData, currentWavelength);
+                }
+                ringsCtx.putImageData(imageData, 0, 0);
+                document.getElementById('viewLabel').textContent = isWhiteMode ?
+                    '俯视图 · 白光干涉（RGB叠加）' :
+                    '俯视图 · 反射光干涉 λ=' + currentWavelength + 'nm';
+            }
+
+            // ==================== Three.js 3D场景 ====================
+            let scene, camera, renderer, controls;
+            let lensMesh, glassMesh, ringsPlane, ringsTexture;
+
+            function initThree() {
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color('#0a0e14');
+
+                camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
+                camera.position.set(120, 80, 120);
+                camera.lookAt(0, 10, 0);
+
+                renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.shadowMap.enabled = true;
+                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                threeContainer.appendChild(renderer.domElement);
+
+                const ambientLight = new THREE.AmbientLight(0x404060);
+                scene.add(ambientLight);
+                const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+                dirLight.position.set(50, 100, 50);
+                dirLight.castShadow = true;
+                dirLight.shadow.mapSize.width = 1024;
+                dirLight.shadow.mapSize.height = 1024;
+                dirLight.shadow.camera.near = 0.1;
+                dirLight.shadow.camera.far = 300;
+                dirLight.shadow.camera.left = -150;
+                dirLight.shadow.camera.right = 150;
+                dirLight.shadow.camera.top = 150;
+                dirLight.shadow.camera.bottom = -150;
+                scene.add(dirLight);
+                const backLight = new THREE.DirectionalLight(0x6688aa, 0.6);
+                backLight.position.set(-30, 20, -40);
+                scene.add(backLight);
+
+                const glassGeometry = new THREE.BoxGeometry(160, 8, 160);
+                const glassMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x334455,
+                    specular: 0x556677,
+                    shininess: 30,
+                    transparent: true,
+                    opacity: 0.7,
+                    emissive: 0x000000
+                });
+                glassMesh = new THREE.Mesh(glassGeometry, glassMaterial);
+                glassMesh.position.y = 0;
+                glassMesh.receiveShadow = true;
+                glassMesh.castShadow = true;
+                scene.add(glassMesh);
+
+                const lensRadius = 75;
+                const sagitta = 18;
+                const R = (lensRadius * lensRadius + sagitta * sagitta) / (2 * sagitta);
+                const points = [];
+                points.push(new THREE.Vector2(0, sagitta));
+                points.push(new THREE.Vector2(lensRadius, sagitta));
+                const steps = 20;
+                for (let i = 1; i <= steps; i++) {
+                    const x = lensRadius * (1 - i / steps);
+                    const y = R - Math.sqrt(R * R - x * x);
+                    points.push(new THREE.Vector2(x, y));
+                }
+                points.push(new THREE.Vector2(0, 0));
+                const lensGeometry = new THREE.LatheGeometry(points, 64);
+                const lensMaterial = new THREE.MeshPhongMaterial({
+                    color: 0x88aacc,
+                    specular: 0xaaccff,
+                    shininess: 60,
+                    transparent: true,
+                    opacity: 0.55,
+                    side: THREE.DoubleSide
+                });
+                lensMesh = new THREE.Mesh(lensGeometry, lensMaterial);
+                lensMesh.position.y = 0;
+                lensMesh.castShadow = true;
+                lensMesh.receiveShadow = true;
+                scene.add(lensMesh);
+
+                const ringsCanvasTexture = document.createElement('canvas');
+                ringsCanvasTexture.width = 256;
+                ringsCanvasTexture.height = 256;
+                ringsTexture = new THREE.CanvasTexture(ringsCanvasTexture);
+                ringsTexture.minFilter = THREE.LinearFilter;
+                ringsTexture.magFilter = THREE.LinearFilter;
+                const ringsMaterial = new THREE.MeshBasicMaterial({
+                    map: ringsTexture,
+                    transparent: true,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                });
+                const ringsGeometry = new THREE.PlaneGeometry(140, 140);
+                ringsPlane = new THREE.Mesh(ringsGeometry, ringsMaterial);
+                ringsPlane.rotation.x = -Math.PI / 2;
+                ringsPlane.position.y = 4.1;
+                ringsPlane.receiveShadow = false;
+                scene.add(ringsPlane);
+
+                const gridHelper = new THREE.GridHelper(200, 20, 0x335577, 0x224466);
+                gridHelper.position.y = -4.1;
+                scene.add(gridHelper);
+
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.target.set(0, 10, 0);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.rotateSpeed = 1.2;
+                controls.minDistance = 60;
+                controls.maxDistance = 300;
+                controls.maxPolarAngle = Math.PI * 0.75;
+                controls.update();
+
+                updateThreeTexture();
+
+                function animate() {
+                    requestAnimationFrame(animate);
+                    controls.update();
+                    renderer.render(scene, camera);
+                }
+                animate();
+
+                window.addEventListener('resize', onResize);
+                setTimeout(onResize, 0);
+            }
+
+            function onResize() {
+                const rect = threeContainer.getBoundingClientRect();
+                const w = rect.width;
+                const h = rect.height;
+                if (w > 0 && h > 0) {
+                    camera.aspect = w / h;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(w, h);
+                }
+            }
+
+            function updateThreeTexture() {
+                const texCanvas = ringsTexture.image;
+                const texCtx = texCanvas.getContext('2d');
+                const size = texCanvas.width;
+                const center = size / 2;
+                const maxR = size / 2 - 2;
+                const imageData = texCtx.createImageData(size, size);
+                const data = imageData.data;
+
+                if (isWhiteMode) {
+                    const wavelengths = [
+                        { lambda: 650, rgb: [255, 60, 60] },
+                        { lambda: 532, rgb: [60, 255, 80] },
+                        { lambda: 450, rgb: [60, 100, 255] }
+                    ];
+                    const sigma = maxR * 0.7;
+                    for (let y = 0; y < size; y++) {
+                        for (let x = 0; x < size; x++) {
+                            const dx = x - center;
+                            const dy = y - center;
+                            const r2 = dx * dx + dy * dy;
+                            const r = Math.sqrt(r2);
+                            const idx = (y * size + x) * 4;
+                            if (r > maxR) {
+                                data[idx] = 0;
+                                data[idx + 1] = 0;
+                                data[idx + 2] = 0;
+                                data[idx + 3] = 0;
+                                continue;
+                            }
+                            const gaussianFactor = Math.exp(-r2 / (2 * sigma * sigma));
+                            let totalR = 0,
+                                totalG = 0,
+                                totalB = 0;
+                            for (const wl of wavelengths) {
+                                const C = BASE_C * (wl.lambda / BASE_LAMBDA) * (size / CANVAS_SIZE) * (size / CANVAS_SIZE);
+                                const phase = Math.PI * r2 / C;
+                                const intensity = Math.sin(phase) * Math.sin(phase);
+                                const fi = intensity * gaussianFactor;
+                                totalR += wl.rgb[0] * fi;
+                                totalG += wl.rgb[1] * fi;
+                                totalB += wl.rgb[2] * fi;
+                            }
+                            data[idx] = Math.min(255, Math.round(totalR));
+                            data[idx + 1] = Math.min(255, Math.round(totalG));
+                            data[idx + 2] = Math.min(255, Math.round(totalB));
+                            data[idx + 3] = 255;
+                        }
+                    }
+                } else {
+                    const C = BASE_C * (currentWavelength / BASE_LAMBDA) * (size / CANVAS_SIZE) * (size / CANVAS_SIZE);
+                    const sigma = maxR * 0.75;
+                    const [baseR, baseG, baseB] = wavelengthToRGB(currentWavelength);
+                    for (let y = 0; y < size; y++) {
+                        for (let x = 0; x < size; x++) {
+                            const dx = x - center;
+                            const dy = y - center;
+                            const r2 = dx * dx + dy * dy;
+                            const r = Math.sqrt(r2);
+                            const idx = (y * size + x) * 4;
+                            if (r > maxR) {
+                                data[idx] = 0;
+                                data[idx + 1] = 0;
+                                data[idx + 2] = 0;
+                                data[idx + 3] = 0;
+                                continue;
+                            }
+                            const phase = Math.PI * r2 / C;
+                            const intensity = Math.sin(phase) * Math.sin(phase);
+                            const gaussianFactor = Math.exp(-r2 / (2 * sigma * sigma));
+                            const finalIntensity = intensity * gaussianFactor;
+                            data[idx] = Math.round(baseR * finalIntensity);
+                            data[idx + 1] = Math.round(baseG * finalIntensity);
+                            data[idx + 2] = Math.round(baseB * finalIntensity);
+                            data[idx + 3] = 255;
+                        }
+                    }
+                }
+
+                texCtx.putImageData(imageData, 0, 0);
+                ringsTexture.needsUpdate = true;
+            }
+
+            // ==================== 更新显示（仅波长与预设按钮状态） ====================
+            function updateBasicDisplay() {
+                wavelengthDisplay.textContent = currentWavelength + ' nm';
+                if (parseInt(wavelengthSlider.value) !== currentWavelength) {
+                    wavelengthSlider.value = currentWavelength;
+                }
+                presetButtons.forEach(btn => {
+                    const wl = parseInt(btn.dataset.wavelength);
+                    btn.classList.toggle('active', wl === currentWavelength && !isWhiteMode);
+                });
+                const [r, g, b] = wavelengthToRGB(currentWavelength);
+                colorPicker.value = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+            }
+
+            function redrawAll() {
+                drawRings2D();
+                updateThreeTexture();
+                updateBasicDisplay();
+            }
+
+            // ==================== 事件处理 ====================
+            wavelengthSlider.addEventListener('input', function() {
+                currentWavelength = parseInt(this.value);
+                isWhiteMode = false;
+                monoBtn.classList.add('active');
+                whiteBtn.classList.remove('active');
+                redrawAll();
+            });
+
+            presetButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    currentWavelength = parseInt(this.dataset.wavelength);
+                    isWhiteMode = false;
+                    monoBtn.classList.add('active');
+                    whiteBtn.classList.remove('active');
+                    redrawAll();
+                });
+            });
+
+            monoBtn.addEventListener('click', function() {
+                isWhiteMode = false;
+                monoBtn.classList.add('active');
+                whiteBtn.classList.remove('active');
+                redrawAll();
+            });
+
+            whiteBtn.addEventListener('click', function() {
+                isWhiteMode = true;
+                whiteBtn.classList.add('active');
+                monoBtn.classList.remove('active');
+                redrawAll();
+            });
+
+            colorPicker.addEventListener('input', function() {
+                const wavelength = rgbToWavelength(this.value);
+                currentWavelength = Math.max(400, Math.min(700, wavelength));
+                isWhiteMode = false;
+                monoBtn.classList.add('active');
+                whiteBtn.classList.remove('active');
+                redrawAll();
+            });
+
+            ringsCanvas.addEventListener('mousemove', function(e) {
+                if (isWhiteMode) {
+                    tooltip.style.display = 'none';
+                    return;
+                }
+                const rect = ringsCanvas.getBoundingClientRect();
+                const scaleX = CANVAS_SIZE / rect.width;
+                const scaleY = CANVAS_SIZE / rect.height;
+                const canvasX = (e.clientX - rect.left) * scaleX;
+                const canvasY = (e.clientY - rect.top) * scaleY;
+                const dx = canvasX - CENTER;
+                const dy = canvasY - CENTER;
+                const rPx = Math.sqrt(dx * dx + dy * dy);
+                if (rPx > MAX_RADIUS_PX + 10) {
+                    tooltip.style.display = 'none';
+                    return;
+                }
+                const C = BASE_C * (currentWavelength / BASE_LAMBDA);
+                const kValue = rPx * rPx / C;
+                const dThicknessNm = (rPx * rPx) / (2 * R_CURVATURE * 1e9) * 1e-9;
+                const dThicknessUm = dThicknessNm * 1e6;
+                tooltip.style.display = 'block';
+                tooltip.style.left = (e.clientX + 15) + 'px';
+                tooltip.style.top = (e.clientY - 10) + 'px';
+                tooltip.innerHTML = `
+                    <b>到中心距离:</b> ${rPx.toFixed(1)} px<br>
+                    <b>干涉级数 k:</b> ${kValue.toFixed(2)}<br>
+                    <b>膜厚 d:</b> ${dThicknessUm.toFixed(3)} μm<br>
+                    <b>波长 λ:</b> ${currentWavelength} nm
+                `;
+            });
+
+            ringsCanvas.addEventListener('mouseleave', function() {
+                tooltip.style.display = 'none';
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentWavelength = Math.max(400, currentWavelength - 2);
+                    isWhiteMode = false;
+                    monoBtn.classList.add('active');
+                    whiteBtn.classList.remove('active');
+                    redrawAll();
+                } else if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentWavelength = Math.min(700, currentWavelength + 2);
+                    isWhiteMode = false;
+                    monoBtn.classList.add('active');
+                    whiteBtn.classList.remove('active');
+                    redrawAll();
+                } else if (e.key === 'w' || e.key === 'W') {
+                    isWhiteMode = !isWhiteMode;
+                    whiteBtn.classList.toggle('active', isWhiteMode);
+                    monoBtn.classList.toggle('active', !isWhiteMode);
+                    redrawAll();
+                }
+            });
+
+            // ==================== 初始化 ====================
+            function init() {
+                drawRings2D();
+                initThree();
+                redrawAll();
+                presetButtons.forEach(btn => {
+                    if (parseInt(btn.dataset.wavelength) === currentWavelength) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+
+            init();
+        })();
+    </script>
+
+<script>
+(function(){
+  var IS_HOME = (location.pathname.split('/').pop() === 'index.html' || location.pathname.split('/').pop() === '');
+
+  /* 1. 禁用右键菜单 */
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); try{ e.returnValue = false; }catch(_){} return false; });
+  /* 2. 鼠标右键按下直接吞掉 */
+  document.addEventListener('mousedown', function(e){ if(e.button === 2){ e.preventDefault(); return false; } });
+  document.addEventListener('mouseup',   function(e){ if(e.button === 2){ e.preventDefault(); return false; } });
+
+  /* 3. 禁用快捷键 */
+  document.addEventListener('keydown', function(e){
+    var k = (e.key || '').toLowerCase();
+    var ctrl = e.ctrlKey || e.metaKey;
+    var blocked = false;
+    /* F12 */
+    if(e.key === 'F12'){ blocked = true; }
+    /* Ctrl+U / S / P / C / V / X */
+    if(ctrl && ['u','s','p','c','v','x'].indexOf(k) >= 0){ blocked = true; }
+    /* Ctrl+Shift+I / J / C */
+    if(ctrl && e.shiftKey && ['i','j','c'].indexOf(k) >= 0){ blocked = true; }
+    if(blocked){ e.preventDefault(); try{ e.returnValue = false; }catch(_){} return false; }
+    /* ESC 返回主页 */
+    if(e.key === 'Escape' && !IS_HOME){
+      location.href = 'index.html';
+    }
+  });
+
+  /* 4. 禁用文本选择（input/textarea 放行） */
+  document.addEventListener('selectstart', function(e){
+    var tag = (e.target.tagName || '').toUpperCase();
+    if(tag !== 'INPUT' && tag !== 'TEXTAREA'){ e.preventDefault(); return false; }
+  });
+  /* 5. 禁用拖拽 */
+  document.addEventListener('dragstart', function(e){ e.preventDefault(); return false; });
+
+  /* 6. 注入 user-select 样式（input/textarea 仍可选） */
+  var style = document.createElement('style');
+  style.textContent = 'body{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none;}input,textarea{-webkit-user-select:text;-moz-user-select:text;-ms-user-select:text;user-select:text;}img{-webkit-user-drag:none;user-drag:none;}';
+  (document.head || document.documentElement).appendChild(style);
+
+  /* 7. 主页滚动位置记忆 */
+  if(IS_HOME){
+    window.addEventListener('load', function(){
+      var saved = parseInt(localStorage.getItem('qilai_scroll_top') || '0', 10);
+      if(saved > 0){ window.scrollTo(0, saved); }
+    });
+    document.addEventListener('click', function(e){
+      var a = e.target.closest ? e.target.closest('a') : null;
+      if(a){ localStorage.setItem('qilai_scroll_top', String(window.scrollY)); }
+    }, true);
+  }
+})();
+
+</script>
+  <script>
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+  
+  document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.keyCode === 27) { saveScrollAndReturn(); }
+  });
+  
+  document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+  
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
