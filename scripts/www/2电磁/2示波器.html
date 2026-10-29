@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>高中物理 · 立体示波管 (电荷符号随电压变化)</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+            background-color: #0a1628;
+            color: #cfe0f0;
+        }
+        #container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #canvas-wrapper {
+            flex: 1;
+            min-height: 0;
+            background: #0a1628;
+            position: relative;
+        }
+        canvas {
+            display: block;
+        }
+        .ui-panel {
+            background: rgba(12, 22, 38, 0.94);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid #1e3a5f;
+            padding: 12px 20px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #10203a;
+            padding: 8px 15px;
+            border-radius: 12px;
+            border: 1px solid #1e3a5f;
+        }
+        .control-group label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #9bb8d8;
+            white-space: nowrap;
+        }
+        .control-group .val {
+            font-weight: 700;
+            color: #ff5a4a;
+            min-width: 50px;
+            text-align: right;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .control-group.vx .val {
+            color: #ff9b4a;
+        }
+        .control-group.freq .val {
+            color: #4fd18b;
+        }
+        input[type="range"] {
+            width: 120px;
+            cursor: pointer;
+            accent-color: #ff5a4a;
+        }
+        .vx input[type="range"] {
+            accent-color: #ff9b4a;
+        }
+        .freq input[type="range"] {
+            accent-color: #4fd18b;
+        }
+        button {
+            background: #10203a;
+            border: 1px solid #2a4a72;
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-weight: 600;
+            color: #9bb8d8;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+        }
+        button:hover {
+            background: #17324f;
+            color: #cfe0f0;
+        }
+        button.active {
+            background: #c0392b;
+            color: white;
+            border-color: #a83227;
+        }
+        .legend {
+            font-size: 0.75em;
+            color: #6f8ba8;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+        .legend span::before {
+            content: "";
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff3b2f;
+            box-shadow: 0 0 6px #ff3b2f;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+        .legend .dash::before {
+            border-radius: 0;
+            width: 14px;
+            height: 0;
+            border-top: 2px dashed #ff3b2f;
+            background: transparent;
+            box-shadow: none;
+        }
+        @media (max-width: 700px) {
+            .ui-panel {
+                gap: 8px;
+                padding: 10px;
+            }
+            .control-group {
+                padding: 6px 10px;
+                gap: 5px;
+            }
+            input[type="range"] {
+                width: 80px;
+            }
+            .legend {
+                display: none;
+            }
+        }
+    </style>
+  <style>
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+    <div id="container">
+        <div id="canvas-wrapper"></div>
+        <div class="ui-panel">
+            <div class="control-group">
+                <label>🔴 垂直偏转 V<sub>Y</sub></label>
+                <input type="range" id="vySlider" min="-50" max="50" value="0" step="0.5">
+                <span class="val" id="vyVal">0 V</span>
+            </div>
+            <div class="control-group vx">
+                <label>🟠 水平偏转 V<sub>X</sub></label>
+                <input type="range" id="vxSlider" min="-50" max="50" value="0" step="0.5">
+                <span class="val" id="vxVal">0 V</span>
+            </div>
+            <div class="control-group freq">
+                <label>⚡ 发射频率</label>
+                <input type="range" id="freqSlider" min="5" max="50" value="25" step="1">
+                <span class="val" id="freqVal">25 个/秒</span>
+            </div>
+            <button id="autoScanBtn">▶ 开始扫描</button>
+            <div class="legend">
+                <span>电子粒子</span>
+                <span class="dash">轨迹虚线</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ---------- DOM ----------
+        const container = document.getElementById('canvas-wrapper');
+        const vySlider = document.getElementById('vySlider');
+        const vxSlider = document.getElementById('vxSlider');
+        const freqSlider = document.getElementById('freqSlider');
+        const vyValEl = document.getElementById('vyVal');
+        const vxValEl = document.getElementById('vxVal');
+        const freqValEl = document.getElementById('freqVal');
+        const autoScanBtn = document.getElementById('autoScanBtn');
+
+        // ---------- 场景初始化 ----------
+        const BG_COLOR = 0x0a1628;
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(BG_COLOR);
+        scene.fog = new THREE.Fog(BG_COLOR, 12, 32);
+
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.5, 60);
+        camera.position.set(7, 4.5, 6.5);
+        camera.lookAt(0, 0.2, 1.5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        container.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0.2, 1.8);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.rotateSpeed = 0.8;
+        controls.maxPolarAngle = Math.PI;
+        controls.minDistance = 4;
+        controls.maxDistance = 20;
+        controls.update();
+
+        // 光照
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.6);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        dirLight.position.set(5, 10, 3);
+        dirLight.castShadow = true;
+        dirLight.receiveShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        dirLight.shadow.camera.near = 0.5;
+        dirLight.shadow.camera.far = 30;
+        dirLight.shadow.camera.left = -8;
+        dirLight.shadow.camera.right = 8;
+        dirLight.shadow.camera.top = 6;
+        dirLight.shadow.camera.bottom = -4;
+        scene.add(dirLight);
+        const fillLight = new THREE.DirectionalLight(0x8bb8ff, 1.0);
+        fillLight.position.set(-4, 2, -3);
+        scene.add(fillLight);
+        const backLight = new THREE.DirectionalLight(0x4a7ab8, 0.7);
+        backLight.position.set(0, 0, -6);
+        scene.add(backLight);
+
+        // ---------- 物理参数 ----------
+        const maxVoltage = 50;
+        const vz = 3.2;
+        const yEntryZ = -0.3;
+        const yExitZ = 1.3;
+        const yPlateLen = yExitZ - yEntryZ;
+        const xEntryZ = 1.7;
+        const xExitZ = 3.3;
+        const xPlateLen = xExitZ - xEntryZ;
+        const screenZ = 5.82;
+        const t1_y = yPlateLen / vz;
+        const t2_y = (screenZ - yExitZ) / vz;
+        const k_acc_y = 1.25 / (t1_y * (t1_y / 2 + t2_y)) / maxVoltage;
+        const t1_x = xPlateLen / vz;
+        const t2_x = (screenZ - xExitZ) / vz;
+        const k_acc_x = 1.25 / (t1_x * (t1_x / 2 + t2_x)) / maxVoltage;
+
+        let vyVoltage = 0;
+        let vxVoltage = 0;
+        let autoScanActive = false;
+        let autoScanTime = 0;
+        let emitInterval = 0.04;
+
+        // ---------- 示波管组件 ----------
+        const tubeGroup = new THREE.Group();
+        scene.add(tubeGroup);
+
+        // ---------- 荧光屏 ----------
+        const screenRadius = 1.35 * 1.25;
+        const screenGeom = new THREE.CylinderGeometry(screenRadius, screenRadius, 0.15, 48);
+        const screenMat = new THREE.MeshStandardMaterial({
+            color: 0xd4e8c0,
+            roughness: 0.5,
+            emissive: new THREE.Color(0x3a6a3a),
+            emissiveIntensity: 0.45,
+            metalness: 0.1,
+        });
+        const screenMesh = new THREE.Mesh(screenGeom, screenMat);
+        screenMesh.position.set(0, 0, 5.75);
+        screenMesh.rotation.x = Math.PI / 2;
+        screenMesh.castShadow = true;
+        screenMesh.receiveShadow = true;
+        tubeGroup.add(screenMesh);
+
+        const screenRingGeom = new THREE.TorusGeometry(screenRadius + 0.03, 0.06, 16, 64);
+        const screenRing = new THREE.Mesh(screenRingGeom, new THREE.MeshStandardMaterial({
+            color: 0x8a9aa8, roughness: 0.5, metalness: 0.7
+        }));
+        screenRing.position.set(0, 0, 5.82);
+        tubeGroup.add(screenRing);
+
+        // ---------- 电子枪 ----------
+        function addGunPart(geom, posZ, color = 0x777777) {
+            const mesh = new THREE.Mesh(geom, new THREE.MeshStandardMaterial({
+                color, metalness: 0.8, roughness: 0.35
+            }));
+            mesh.position.set(0, 0, posZ);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            tubeGroup.add(mesh);
+            return mesh;
+        }
+        const ringGeom = new THREE.TorusGeometry(0.35, 0.08, 8, 24);
+        addGunPart(ringGeom, -4.3).rotation.x = Math.PI / 2;
+        addGunPart(ringGeom, -3.9).rotation.x = Math.PI / 2;
+        addGunPart(new THREE.CylinderGeometry(0.25, 0.25, 0.2, 16), -3.6, 0x666666);
+        addGunPart(new THREE.CylinderGeometry(0.2, 0.2, 0.15, 16), -3.3, 0x6a6a6a);
+
+        const filamentGlow = new THREE.Mesh(
+            new THREE.SphereGeometry(0.15, 16, 16),
+            new THREE.MeshBasicMaterial({ color: 0xffaa30 })
+        );
+        filamentGlow.position.set(0, 0, -4.15);
+        tubeGroup.add(filamentGlow);
+
+        // ---------- 半透明偏转板 ----------
+        function createPlate(w, h, d, color = 0xaaaaaa) {
+            const geom = new THREE.BoxGeometry(w, h, d);
+            const mat = new THREE.MeshStandardMaterial({
+                color: color,
+                metalness: 0.6,
+                roughness: 0.35,
+                transparent: true,
+                opacity: 0.35,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            });
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            return mesh;
+        }
+
+        // Y 偏转板（上下）
+        const yPlateW = 2.4;
+        const yPlateH = 0.12;
+        const yPlateD = yPlateLen;
+        const yGap = 1.6;
+        const yPlateY = yGap / 2;
+        const yPlateZ = (yEntryZ + yExitZ) / 2;
+
+        const yPlateTop = createPlate(yPlateW, yPlateH, yPlateD, 0x9aa8b8);
+        yPlateTop.position.set(0, yPlateY, yPlateZ);
+        tubeGroup.add(yPlateTop);
+
+        const yPlateBottom = createPlate(yPlateW, yPlateH, yPlateD, 0x9aa8b8);
+        yPlateBottom.position.set(0, -yPlateY, yPlateZ);
+        tubeGroup.add(yPlateBottom);
+
+        // X 偏转板（左右）
+        const xPlateW = 0.12;
+        const xPlateH = 2.2;
+        const xPlateD = xPlateLen;
+        const xGap = 1.6;
+        const xPlateX = xGap / 2;
+        const xPlateZ = (xEntryZ + xExitZ) / 2;
+
+        const xPlateLeft = createPlate(xPlateW, xPlateH, xPlateD, 0xc0a888);
+        xPlateLeft.position.set(-xPlateX, 0, xPlateZ);
+        tubeGroup.add(xPlateLeft);
+
+        const xPlateRight = createPlate(xPlateW, xPlateH, xPlateD, 0xc0a888);
+        xPlateRight.position.set(xPlateX, 0, xPlateZ);
+        tubeGroup.add(xPlateRight);
+
+        // ---------- 极板电荷符号（小巧、无圆圈、数量随电压变化） ----------
+        const MAX_SYMBOLS_PER_PLATE = 5;
+        const SYMBOL_SCALE = 0.32;      // 小尺寸
+        const SYMBOL_OFFSET = 0.24;     // 符号距极板表面的距离
+        const SYMBOL_SPAN = 0.62;       // 符号沿 Z 方向的最大分布半径
+
+        function makeSignTexture(sign, color) {
+            const size = 128;
+            const c = document.createElement('canvas');
+            c.width = size;
+            c.height = size;
+            const g = c.getContext('2d');
+            g.clearRect(0, 0, size, size);
+
+            // 仅绘制符号本身，无外圈
+            g.strokeStyle = color;
+            g.lineCap = 'round';
+            g.lineWidth = 16;
+
+            if (sign === '+') {
+                // 竖线
+                g.beginPath();
+                g.moveTo(size / 2, 20);
+                g.lineTo(size / 2, size - 20);
+                g.stroke();
+                // 横线
+                g.beginPath();
+                g.moveTo(20, size / 2);
+                g.lineTo(size - 20, size / 2);
+                g.stroke();
+            } else {
+                // 减号
+                g.beginPath();
+                g.moveTo(22, size / 2);
+                g.lineTo(size - 22, size / 2);
+                g.stroke();
+            }
+
+            const tex = new THREE.CanvasTexture(c);
+            tex.colorSpace = THREE.SRGBColorSpace;
+            tex.needsUpdate = true;
+            return tex;
+        }
+
+        const plusTex = makeSignTexture('+', '#ff4a3a');
+        const minusTex = makeSignTexture('−', '#4ab8ff');
+
+        function makeSignSprite(tex) {
+            const mat = new THREE.SpriteMaterial({
+                map: tex,
+                transparent: true,
+                depthTest: true,
+                depthWrite: false,
+                opacity: 0.95
+            });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(SYMBOL_SCALE, SYMBOL_SCALE, 1);
+            sprite.visible = false;
+            return sprite;
+        }
+
+        // 每个极板创建 MAX_SYMBOLS_PER_PLATE 组 (+ / −) 精灵
+        // 沿 Z 轴均匀分布
+        const zOffsets = [];
+        for (let i = 0; i < MAX_SYMBOLS_PER_PLATE; i++) {
+            zOffsets.push(-SYMBOL_SPAN + (2 * SYMBOL_SPAN) * i / (MAX_SYMBOLS_PER_PLATE - 1));
+        }
+
+        // Y 上极板
+        const yTopPlus = [], yTopMinus = [];
+        // Y 下极板
+        const yBotPlus = [], yBotMinus = [];
+        // X 左极板
+        const xLeftPlus = [], xLeftMinus = [];
+        // X 右极板
+        const xRightPlus = [], xRightMinus = [];
+
+        for (let i = 0; i < MAX_SYMBOLS_PER_PLATE; i++) {
+            const zOff = zOffsets[i];
+
+            // Y 上极板：位于上板之上
+            const yTopPlusSprite = makeSignSprite(plusTex);
+            yTopPlusSprite.position.set(0, yPlateY + SYMBOL_OFFSET, yPlateZ + zOff);
+            scene.add(yTopPlusSprite);
+            yTopPlus.push(yTopPlusSprite);
+
+            const yTopMinusSprite = makeSignSprite(minusTex);
+            yTopMinusSprite.position.set(0, yPlateY + SYMBOL_OFFSET, yPlateZ + zOff);
+            scene.add(yTopMinusSprite);
+            yTopMinus.push(yTopMinusSprite);
+
+            // Y 下极板：位于下板之下
+            const yBotPlusSprite = makeSignSprite(plusTex);
+            yBotPlusSprite.position.set(0, -yPlateY - SYMBOL_OFFSET, yPlateZ + zOff);
+            scene.add(yBotPlusSprite);
+            yBotPlus.push(yBotPlusSprite);
+
+            const yBotMinusSprite = makeSignSprite(minusTex);
+            yBotMinusSprite.position.set(0, -yPlateY - SYMBOL_OFFSET, yPlateZ + zOff);
+            scene.add(yBotMinusSprite);
+            yBotMinus.push(yBotMinusSprite);
+
+            // X 左极板：位于左板之左
+            const xLeftPlusSprite = makeSignSprite(plusTex);
+            xLeftPlusSprite.position.set(-xPlateX - SYMBOL_OFFSET, 0, xPlateZ + zOff);
+            scene.add(xLeftPlusSprite);
+            xLeftPlus.push(xLeftPlusSprite);
+
+            const xLeftMinusSprite = makeSignSprite(minusTex);
+            xLeftMinusSprite.position.set(-xPlateX - SYMBOL_OFFSET, 0, xPlateZ + zOff);
+            scene.add(xLeftMinusSprite);
+            xLeftMinus.push(xLeftMinusSprite);
+
+            // X 右极板：位于右板之右
+            const xRightPlusSprite = makeSignSprite(plusTex);
+            xRightPlusSprite.position.set(xPlateX + SYMBOL_OFFSET, 0, xPlateZ + zOff);
+            scene.add(xRightPlusSprite);
+            xRightPlus.push(xRightPlusSprite);
+
+            const xRightMinusSprite = makeSignSprite(minusTex);
+            xRightMinusSprite.position.set(xPlateX + SYMBOL_OFFSET, 0, xPlateZ + zOff);
+            scene.add(xRightMinusSprite);
+            xRightMinus.push(xRightMinusSprite);
+        }
+
+        // 根据电压计算显示的符号数量
+        // 规则：|V| 在 (0, 10] → 1 个；(10, 20] → 2 个；... ；(40, 50] → 5 个
+        function countSymbols(voltage) {
+            const absV = Math.abs(voltage);
+            if (absV < 0.3) return 0;
+            return Math.min(MAX_SYMBOLS_PER_PLATE, Math.floor(absV / 10) + 1);
+        }
+
+        // 更新所有极板符号的显示状态
+        function updatePlateSigns() {
+            // ---- Y 极板 ----
+            const yCount = countSymbols(vyVoltage);
+            const yTopIsPositive = vyVoltage > 0;
+
+            for (let i = 0; i < MAX_SYMBOLS_PER_PLATE; i++) {
+                const show = i < yCount;
+
+                // Y 上极板
+                yTopPlus[i].visible = show && yTopIsPositive;
+                yTopMinus[i].visible = show && !yTopIsPositive;
+
+                // Y 下极板（与上极板相反）
+                yBotPlus[i].visible = show && !yTopIsPositive;
+                yBotMinus[i].visible = show && yTopIsPositive;
+            }
+
+            // ---- X 极板 ----
+            const xCount = countSymbols(vxVoltage);
+            const xRightIsPositive = vxVoltage > 0;
+
+            for (let i = 0; i < MAX_SYMBOLS_PER_PLATE; i++) {
+                const show = i < xCount;
+
+                // X 左极板
+                xLeftPlus[i].visible = show && !xRightIsPositive;
+                xLeftMinus[i].visible = show && xRightIsPositive;
+
+                // X 右极板（与左极板相反）
+                xRightPlus[i].visible = show && xRightIsPositive;
+                xRightMinus[i].visible = show && !xRightIsPositive;
+            }
+        }
+
+        // ---------- 粒子系统 ----------
+        const particleGeom = new THREE.SphereGeometry(0.07, 8, 8);
+        const particleMat = new THREE.MeshBasicMaterial({ color: 0xff3b2f });
+        const maxParticles = 90;
+        const particlePool = [];
+        for (let i = 0; i < maxParticles; i++) {
+            const mesh = new THREE.Mesh(particleGeom, particleMat);
+            mesh.visible = false;
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            scene.add(mesh);
+            particlePool.push({ mesh, alive: false, t: 0, vy: 0, vx: 0 });
+        }
+
+        function emitParticle() {
+            for (const p of particlePool) {
+                if (!p.alive) {
+                    p.alive = true;
+                    p.t = 0;
+                    p.vy = 0;
+                    p.vx = 0;
+                    p.mesh.visible = true;
+                    p.mesh.position.set(0, 0, -3.5);
+                    return;
+                }
+            }
+            const oldest = particlePool[0];
+            oldest.alive = true;
+            oldest.t = 0;
+            oldest.vy = 0;
+            oldest.vx = 0;
+            oldest.mesh.visible = true;
+            oldest.mesh.position.set(0, 0, -3.5);
+        }
+
+        // 屏幕光点
+        const spotGeom = new THREE.SphereGeometry(0.18, 16, 16);
+        const spotMat = new THREE.MeshBasicMaterial({ color: 0xff5a4a, transparent: true, opacity: 0 });
+        const screenSpot = new THREE.Mesh(spotGeom, spotMat);
+        screenSpot.position.set(0, 0, screenZ);
+        scene.add(screenSpot);
+        let spotAlpha = 0;
+        let spotPos = new THREE.Vector3(0, 0, screenZ);
+
+        // 红色虚线轨迹
+        const maxTrajectoryPoints = 200;
+        const trajectoryPositions = new Float32Array(maxTrajectoryPoints * 3);
+        const trajectoryGeom = new THREE.BufferGeometry();
+        trajectoryGeom.setAttribute('position', new THREE.BufferAttribute(trajectoryPositions, 3));
+        trajectoryGeom.setDrawRange(0, 0);
+        const trajectoryLine = new THREE.Line(
+            trajectoryGeom,
+            new THREE.LineDashedMaterial({
+                color: 0xff3b2f,
+                dashSize: 0.35,
+                gapSize: 0.22,
+                linewidth: 1,
+                transparent: true,
+                opacity: 0.95
+            })
+        );
+        trajectoryLine.computeLineDistances();
+        scene.add(trajectoryLine);
+
+        function updateTrajectory(vy, vx) {
+            const points = [];
+            const zStart = -3.5;
+            const zEnd = screenZ;
+            const step = 0.08;
+            for (let z = zStart; z <= zEnd; z += step) {
+                let y = 0, x = 0;
+                if (z < yEntryZ) {
+                    y = 0; x = 0;
+                } else if (z < yExitZ) {
+                    const t = (z - yEntryZ) / vz;
+                    y = 0.5 * k_acc_y * vy * t * t;
+                    x = 0;
+                } else if (z < xEntryZ) {
+                    const yExit = 0.5 * k_acc_y * vy * t1_y * t1_y;
+                    const vyExit = k_acc_y * vy * t1_y;
+                    y = yExit + vyExit * (z - yExitZ) / vz;
+                    x = 0;
+                } else if (z < xExitZ) {
+                    const yExit = 0.5 * k_acc_y * vy * t1_y * t1_y;
+                    const vyExit = k_acc_y * vy * t1_y;
+                    y = yExit + vyExit * (z - yExitZ) / vz;
+                    const t_x = (z - xEntryZ) / vz;
+                    x = 0.5 * k_acc_x * vx * t_x * t_x;
+                } else {
+                    const yExit = 0.5 * k_acc_y * vy * t1_y * t1_y;
+                    const vyExit = k_acc_y * vy * t1_y;
+                    y = yExit + vyExit * (z - yExitZ) / vz;
+                    const xExitVal = 0.5 * k_acc_x * vx * t1_x * t1_x;
+                    const vxExit = k_acc_x * vx * t1_x;
+                    x = xExitVal + vxExit * (z - xExitZ) / vz;
+                }
+                points.push(new THREE.Vector3(x, y, z));
+            }
+            const count = Math.min(points.length, maxTrajectoryPoints);
+            for (let i = 0; i < count; i++) {
+                const p = points[i];
+                trajectoryPositions[i * 3] = p.x;
+                trajectoryPositions[i * 3 + 1] = p.y;
+                trajectoryPositions[i * 3 + 2] = p.z;
+            }
+            trajectoryGeom.attributes.position.needsUpdate = true;
+            trajectoryGeom.setDrawRange(0, count);
+            trajectoryLine.computeLineDistances();
+        }
+
+        // ---------- UI 事件 ----------
+        vySlider.addEventListener('input', () => {
+            if (autoScanActive) {
+                autoScanActive = false;
+                autoScanBtn.textContent = '▶ 开始扫描';
+                autoScanBtn.classList.remove('active');
+            }
+            vyVoltage = parseFloat(vySlider.value);
+            vyValEl.textContent = vyVoltage.toFixed(1) + ' V';
+            updatePlateSigns();
+        });
+
+        vxSlider.addEventListener('input', () => {
+            vxVoltage = parseFloat(vxSlider.value);
+            vxValEl.textContent = vxVoltage.toFixed(1) + ' V';
+            updatePlateSigns();
+        });
+
+        freqSlider.addEventListener('input', () => {
+            const freq = parseFloat(freqSlider.value);
+            emitInterval = 1 / freq;
+            freqValEl.textContent = freq + ' 个/秒';
+        });
+
+        autoScanBtn.addEventListener('click', () => {
+            autoScanActive = !autoScanActive;
+            if (autoScanActive) {
+                autoScanBtn.textContent = '⏸ 停止扫描';
+                autoScanBtn.classList.add('active');
+                autoScanTime = 0;
+                if (Math.abs(vyVoltage) < 1) vyVoltage = -maxVoltage;
+            } else {
+                autoScanBtn.textContent = '▶ 开始扫描';
+                autoScanBtn.classList.remove('active');
+            }
+            updatePlateSigns();
+        });
+
+        // ---------- 动画循环 ----------
+        let lastTime = performance.now() / 1000;
+        let emitAccum = 0;
+
+        function animate(timestamp) {
+            const now = timestamp / 1000;
+            let dt = now - lastTime;
+            if (dt <= 0) dt = 0.016;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = now;
+
+            // 自动扫描
+            if (autoScanActive) {
+                autoScanTime += dt;
+                vyVoltage = maxVoltage * Math.sin(autoScanTime * 1.8);
+                vySlider.value = vyVoltage;
+                vyValEl.textContent = vyVoltage.toFixed(1) + ' V';
+                updatePlateSigns();
+            }
+
+            // 发射粒子
+            emitAccum += dt;
+            while (emitAccum >= emitInterval) {
+                emitAccum -= emitInterval;
+                emitParticle();
+            }
+
+            // 更新粒子
+            for (const p of particlePool) {
+                if (!p.alive) continue;
+                p.t += dt;
+                const z = -3.5 + p.t * vz;
+                if (z >= screenZ) {
+                    p.alive = false;
+                    p.mesh.visible = false;
+                    spotPos.set(p.mesh.position.x, p.mesh.position.y, screenZ);
+                    spotAlpha = 1.0;
+                    continue;
+                }
+                let ay = 0, ax = 0;
+                if (z >= yEntryZ && z < yExitZ) ay = k_acc_y * vyVoltage;
+                if (z >= xEntryZ && z < xExitZ) ax = k_acc_x * vxVoltage;
+                p.vy += ay * dt;
+                p.vx += ax * dt;
+                p.mesh.position.x += p.vx * dt;
+                p.mesh.position.y += p.vy * dt;
+                p.mesh.position.z = z;
+                if (Math.abs(p.mesh.position.y) > 1.6) p.mesh.position.y = Math.sign(p.mesh.position.y) * 1.6;
+                if (Math.abs(p.mesh.position.x) > 1.6) p.mesh.position.x = Math.sign(p.mesh.position.x) * 1.6;
+            }
+
+            // 屏幕光点衰减
+            if (spotAlpha > 0) {
+                spotAlpha -= dt * 2.0;
+                if (spotAlpha < 0) spotAlpha = 0;
+                spotMat.opacity = spotAlpha * 0.9;
+                screenSpot.position.copy(spotPos);
+            }
+
+            // 更新轨迹
+            updateTrajectory(vyVoltage, vxVoltage);
+
+            controls.update();
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+
+        // 初始化
+        updateTrajectory(0, 0);
+        updatePlateSigns();
+        freqValEl.textContent = '25 个/秒';
+        emitInterval = 0.04;
+
+        requestAnimationFrame(animate);
+
+        console.log('✅ 3D示波管已更新');
+        console.log('  • +/− 符号已缩小，去掉外圈');
+        console.log('  • 电压越高，符号数量越多 (每 10V 增加 1 个，最多 5 个)');
+        console.log('  • 鼠标拖拽旋转视角，滚轮缩放');
+    </script>
+  <script>
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+  
+  document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.keyCode === 27) { saveScrollAndReturn(); }
+  });
+  
+  document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+  
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
