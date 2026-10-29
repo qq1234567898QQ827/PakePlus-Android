@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高中数学函数图像生成器 · 等比例标度</title>
+    <style>
+        :root {
+            --bg: #f5f6fa;
+            --card-bg: #ffffff;
+            --text: #2d3436;
+            --text-secondary: #636e72;
+            --border: #dfe6e9;
+            --accent: #6c5ce7;
+            --accent-hover: #5a4bd1;
+            --danger: #e74c3c;
+            --shadow: 0 2px 12px rgba(0,0,0,0.06);
+            --shadow-lg: 0 8px 30px rgba(0,0,0,0.10);
+            --radius: 12px;
+            --radius-sm: 8px;
+            --transition: 0.2s ease;
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'Menlo', monospace;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #e8ecf1 0%, #f0f2f5 30%, #eef1f5 60%, #f5f6fa 100%);
+            min-height:100vh; padding:20px; color:var(--text); -webkit-font-smoothing:antialiased;
+        }
+        .app-container { max-width:1300px; margin:0 auto; }
+        .app-header { text-align:center; margin-bottom:24px; }
+        .app-header h1 {
+            font-size:2rem; font-weight:700;
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+        }
+        .app-header .subtitle { font-size:0.9rem; color:var(--text-secondary); margin-top:2px; }
+        .main-layout { display:flex; gap:20px; flex-wrap:wrap; }
+        .sidebar { flex:0 0 460px; display:flex; flex-direction:column; gap:16px; min-width:420px; }
+        @media (max-width:1200px) { .sidebar { flex:0 0 100%; min-width:auto; } .main-layout { flex-direction:column; } }
+        .card {
+            background:var(--card-bg); border-radius:var(--radius); padding:18px 20px;
+            box-shadow:var(--shadow); border:1px solid var(--border); transition:box-shadow var(--transition);
+        }
+        .card:hover { box-shadow:var(--shadow-lg); }
+        .card-title {
+            font-size:0.85rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px;
+            color:var(--text-secondary); margin-bottom:12px; display:flex; align-items:center; gap:8px;
+        }
+        .card-title .icon { width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+        .function-item {
+            display:flex; align-items:center; gap:4px; padding:8px 8px; margin-bottom:8px;
+            background:#fafbfc; border-radius:var(--radius-sm); border:1px solid #eef0f4; flex-wrap:wrap;
+        }
+        .function-item:hover { border-color:#d5d8e0; background:#f8f9fb; }
+        .fn-index {
+            width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+            font-weight:700; font-size:0.7rem; color:#fff; flex-shrink:0; margin-right:2px;
+        }
+        .expr-input {
+            flex:1 0 80px; min-width:80px; padding:6px 6px; border:1.5px solid #e0e3e8; border-radius:6px;
+            font-size:0.85rem; font-family:var(--font-mono); background:#fff; outline:none;
+        }
+        .expr-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(108,92,231,0.08); }
+        .expr-input.error { border-color:#e74c3c; background:#fff5f5; }
+        .color-picker { width:28px; height:28px; border:2px solid #e0e3e8; border-radius:6px; cursor:pointer; flex-shrink:0; }
+        .thickness-slider { width:45px; accent-color:var(--accent); flex-shrink:0; }
+        .thickness-label { font-size:0.65rem; color:var(--text-secondary); min-width:14px; text-align:center; font-weight:600; }
+        .dashed-toggle { display:flex; align-items:center; gap:2px; font-size:0.65rem; cursor:pointer; user-select:none; white-space:nowrap; }
+        .domain-group { display:flex; align-items:center; gap:2px; font-size:0.65rem; color:#555; }
+        .domain-group input { width:42px; padding:4px 4px; border:1.5px solid #e0e3e8; border-radius:4px; font-size:0.7rem; font-family:var(--font-mono); text-align:center; background:#fff; outline:none; }
+        .domain-group input:focus { border-color:var(--accent); }
+        .btn-remove {
+            width:24px; height:24px; border-radius:50%; border:none; background:#fee; color:var(--danger);
+            cursor:pointer; font-size:0.9rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;
+        }
+        .btn-remove:hover { background:var(--danger); color:#fff; }
+        .btn {
+            padding:10px 18px; border:none; border-radius:8px; cursor:pointer; font-size:0.88rem;
+            font-weight:600; letter-spacing:0.3px; display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+        }
+        .btn-primary { background:var(--accent); color:#fff; }
+        .btn-primary:hover { background:var(--accent-hover); }
+        .btn-outline { background:#fff; color:var(--accent); border:1.5px solid var(--accent); }
+        .btn-outline:hover { background:#f8f7ff; }
+        .btn-sm { padding:5px 10px; font-size:0.75rem; border-radius:5px; }
+        .preset-tag {
+            padding:4px 9px; border-radius:14px; font-size:0.72rem; cursor:pointer; border:1.5px solid #e0e3e8;
+            background:#fafbfc; transition:all var(--transition); font-family:var(--font-mono); white-space:nowrap; user-select:none;
+        }
+        .preset-tag:hover { border-color:var(--accent); background:#f8f7ff; color:var(--accent); }
+        .preset-tag.conic { background:#f0f4ff; border-color:#c4b5fd; }
+        .canvas-area { flex:1; min-width:500px; display:flex; flex-direction:column; gap:12px; }
+        .canvas-card { background:var(--card-bg); border-radius:var(--radius); padding:12px; box-shadow:var(--shadow); border:1px solid var(--border); }
+        .canvas-wrapper { position:relative; width:100%; background:#fff; border-radius:4px; overflow:auto; }
+        canvas { display:block; margin:0 auto; cursor:crosshair; touch-action:none; }
+        .settings-row { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+        .settings-group { display:flex; flex-direction:column; gap:4px; }
+        .settings-group label { font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--text-secondary); }
+        .settings-group input, .settings-group select {
+            width:70px; padding:7px 8px; border:1.5px solid #e0e3e8; border-radius:6px;
+            font-size:0.85rem; font-family:var(--font-mono); text-align:center; background:#fff; outline:none;
+        }
+        .settings-group input.wide { width:100px; }
+        .settings-group input:focus, .settings-group select:focus { border-color:var(--accent); }
+        .toggle-row { display:flex; align-items:center; gap:8px; font-size:0.82rem; cursor:pointer; user-select:none; font-weight:500; }
+        .legend-inline { display:flex; flex-wrap:wrap; gap:10px; padding:6px 0; font-size:0.78rem; align-items:center; }
+        .legend-item { display:flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:0.75rem; color:#555; }
+        .legend-swatch { width:20px; height:3px; border-radius:2px; }
+        .toast {
+            position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px);
+            background:#2d3436; color:#fff; padding:10px 22px; border-radius:20px; font-size:0.85rem;
+            z-index:999; transition:transform 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+        }
+        .toast.show { transform:translateX(-50%) translateY(0); }
+        .draw-toolbar {
+            display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; padding-top:10px;
+            border-top:1px dashed #e0e3e8; align-items:center;
+        }
+        .draw-toolbar .tool-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+    </style>
+  <style>
+  .qilai-back-btn {
+    position: fixed;
+    top: 10px;
+    left: 15px;
+    z-index: 100000;
+    padding: 8px 16px;
+    background: rgba(0, 150, 200, 0.2);
+    border: 1px solid rgba(100, 180, 255, 0.5);
+    color: #8ab4f8;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.3s;
+    backdrop-filter: blur(5px);
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-back-btn:hover {
+    background: rgba(0, 150, 200, 0.4);
+    box-shadow: 0 0 15px rgba(100, 180, 255, 0.3);
+    color: #fff;
+  }
+  
+  .qilai-watermark {
+    position: fixed;
+    bottom: 15px;
+    right: 15px;
+    z-index: 99998;
+    font-size: 12px;
+    color: rgba(138, 180, 248, 0.35);
+    text-align: right;
+    line-height: 1.8;
+    pointer-events: none;
+    user-select: none;
+    font-family: "Microsoft YaHei", sans-serif;
+  }
+  
+  .qilai-watermark .title {
+    font-size: 14px;
+    font-weight: bold;
+    color: rgba(138, 180, 248, 0.45);
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+  </style>
+</head>
+<body>
+  <a href="javascript:void(0);" class="qilai-back-btn" onclick="saveScrollAndReturn();">← 返回主页</a>
+  
+  <div class="qilai-watermark">
+    <div class="title">齐老师动画</div>
+    QQ 3398528250<br>
+    抖音 35320300542
+  </div>
+<div class="app-container">
+    <div class="app-header">
+        <h1>📐 函数图像生成器 · 等比例标度</h1>
+        <p class="subtitle">X/Y轴单位长度一致 · 定义域 · 圆锥曲线 · 手绘标注</p>
+    </div>
+    <div class="main-layout">
+        <div class="sidebar">
+            <div class="card">
+                <div class="card-title"><span class="icon"></span>函数列表</div>
+                <div id="functionList"></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+                    <button class="btn btn-primary btn-sm" id="btnAddFunction">＋ 添加函数</button>
+                    <button class="btn btn-outline btn-sm" id="btnClearAll">清空全部</button>
+                </div>
+                <!-- 手绘工具栏 -->
+                <div class="draw-toolbar">
+                    <button class="btn btn-outline btn-sm tool-btn" id="btnPen" title="自由绘制笔迹">🖌️ 毛笔</button>
+                    <button class="btn btn-outline btn-sm tool-btn" id="btnEraser" title="擦除笔迹">🧽 橡皮擦</button>
+                    <button class="btn btn-outline btn-sm" id="btnUndo" title="撤回上一步">↶ 撤回</button>
+                    <button class="btn btn-outline btn-sm" id="btnRedo" title="恢复下一步">↷ 恢复</button>
+                    <button class="btn btn-outline btn-sm" id="btnClearDraw" title="清除所有笔迹">🗑 清除</button>
+                    <input type="color" id="penColor" value="#e74c3c" title="笔迹颜色"
+                           style="width:28px;height:28px;border:2px solid #e0e3e8;border-radius:6px;cursor:pointer;padding:2px;background:#fff;">
+                    <input type="range" id="penWidth" min="1" max="10" step="0.5" value="2" title="笔迹粗细"
+                           style="width:60px;accent-color:#6c5ce7;">
+                    <span id="penWidthLabel" style="font-size:0.7rem;color:#636e72;font-weight:600;">2</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><span class="icon"></span>快捷预设</div>
+                <div class="btn-group" id="presetButtons" style="gap:5px;">
+                    <span class="preset-tag" data-expr="x">y = x</span>
+                    <span class="preset-tag" data-expr="2*x+1">y = 2x+1</span>
+                    <span class="preset-tag" data-expr="-x+3">y = -x+3</span>
+                    <span class="preset-tag" data-expr="x^2">y = x²</span>
+                    <span class="preset-tag" data-expr="x^2-4">y = x²-4</span>
+                    <span class="preset-tag" data-expr="sin(x)">y = sin(x)</span>
+                    <span class="preset-tag" data-expr="cos(x)">y = cos(x)</span>
+                    <span class="preset-tag" data-expr="tan(x)">y = tan(x)</span>
+                    <span class="preset-tag" data-expr="2*sin(x)">y = 2sin(x)</span>
+                    <span class="preset-tag" data-expr="2*sin(pi*x/6)">y = 2sin(πx/6)</span>
+                    <span class="preset-tag" data-expr="e^x">y = eˣ</span>
+                    <span class="preset-tag" data-expr="ln(x)">y = ln(x)</span>
+                    <span class="preset-tag" data-expr="1/x">y = 1/x</span>
+                    <span class="preset-tag" data-expr="sqrt(x)">y = √x</span>
+                    <span class="preset-tag" data-expr="abs(x)">y = |x|</span>
+                    <span class="preset-tag conic" data-expr="sqrt(4-x^2)" data-expr2="-sqrt(4-x^2)">圆 x²+y²=4</span>
+                    <span class="preset-tag conic" data-expr="sqrt(1-x^2/4)" data-expr2="-sqrt(1-x^2/4)">椭圆 x²/4+y²=1</span>
+                    <span class="preset-tag conic" data-expr="sqrt(x^2/4-1)" data-expr2="-sqrt(x^2/4-1)">双曲线 x²/4-y²=1</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title"><span class="icon"></span>文字标注</div>
+                <div id="annotationList"></div>
+                <button class="btn btn-outline btn-sm" id="btnAddAnnotation" style="margin-top:6px;">＋ 添加标注</button>
+            </div>
+        </div>
+        <div class="canvas-area">
+            <div class="canvas-card">
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="mainCanvas"></canvas>
+                </div>
+                <div class="legend-inline" id="legendBar"></div>
+            </div>
+            <div class="card">
+                <div class="card-title"><span class="icon"></span>坐标轴与样式</div>
+                <div class="settings-row">
+                    <div class="settings-group"><label>X 最小</label><input type="number" id="xMin" value="-10" step="any"></div>
+                    <div class="settings-group"><label>X 最大</label><input type="number" id="xMax" value="10" step="any"></div>
+                    <div class="settings-group"><label>X 步长</label><input type="number" id="xStep" value="2" step="any" min="0.1"></div>
+                    <div class="settings-group"><label>X 标签</label><input type="text" id="xLabel" value="x" class="wide"></div>
+                </div>
+                <div class="settings-row" style="margin-top:8px;">
+                    <div class="settings-group"><label>Y 最小</label><input type="number" id="yMin" value="-10" step="any"></div>
+                    <div class="settings-group"><label>Y 最大</label><input type="number" id="yMax" value="10" step="any"></div>
+                    <div class="settings-group"><label>Y 步长</label><input type="number" id="yStep" value="2" step="any" min="0.1"></div>
+                    <div class="settings-group"><label>Y 标签</label><input type="text" id="yLabel" value="y" class="wide"></div>
+                </div>
+                <div class="settings-row" style="margin-top:12px;align-items:center;">
+                    <div class="settings-group"><label>标题</label><input type="text" id="chartTitle" value="" style="width:120px;"></div>
+                    <div class="settings-group"><label>轴线宽</label><input type="number" id="axisLineWidth" value="1.8" step="0.1" min="0.5" max="5"></div>
+                    <div class="settings-group"><label>网格线宽</label><input type="number" id="gridLineWidth" value="0.7" step="0.1" min="0.2" max="3"></div>
+                    <div class="settings-group"><label>刻度线宽</label><input type="number" id="tickLineWidth" value="1" step="0.1" min="0.2" max="3"></div>
+                    <div class="settings-group"><label>刻度字重</label>
+                        <select id="tickFontWeight">
+                            <option value="300">300</option><option value="400" selected>400</option><option value="500">500</option>
+                            <option value="600">600</option><option value="700">700</option><option value="800">800</option><option value="900">900</option>
+                        </select>
+                    </div>
+                    <label class="toggle-row"><input type="checkbox" id="showGrid" checked> 网格</label>
+                    <label class="toggle-row"><input type="checkbox" id="showAxisLabels" checked> 刻度</label>
+                    <label class="toggle-row"><input type="checkbox" id="showSpecialTicks"> √2/√3</label>
+                    <button class="btn btn-primary btn-sm" id="btnApplySettings">应用</button>
+                    <button class="btn btn-outline btn-sm" id="btnResetView">重置</button>
+                    <button class="btn btn-outline btn-sm" id="btnExportImage" style="background:#27ae60; color:white; border-color:#27ae60;">📷 导出图片</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+    (function() {
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const functionListEl = document.getElementById('functionList');
+        const legendBar = document.getElementById('legendBar');
+        const annotationListEl = document.getElementById('annotationList');
+        const toastEl = document.getElementById('toast');
+
+        const inputXMin = document.getElementById('xMin');
+        const inputXMax = document.getElementById('xMax');
+        const inputXStep = document.getElementById('xStep');
+        const inputXLabel = document.getElementById('xLabel');
+        const inputYMin = document.getElementById('yMin');
+        const inputYMax = document.getElementById('yMax');
+        const inputYStep = document.getElementById('yStep');
+        const inputYLabel = document.getElementById('yLabel');
+        const inputChartTitle = document.getElementById('chartTitle');
+        const inputShowGrid = document.getElementById('showGrid');
+        const inputShowAxisLabels = document.getElementById('showAxisLabels');
+        const inputGridLineWidth = document.getElementById('gridLineWidth');
+        const inputAxisLineWidth = document.getElementById('axisLineWidth');
+        const inputTickLineWidth = document.getElementById('tickLineWidth');
+        const inputTickFontWeight = document.getElementById('tickFontWeight');
+        const inputShowSpecialTicks = document.getElementById('showSpecialTicks');
+
+        // 手绘相关DOM
+        const btnPen = document.getElementById('btnPen');
+        const btnEraser = document.getElementById('btnEraser');
+        const btnUndo = document.getElementById('btnUndo');
+        const btnRedo = document.getElementById('btnRedo');
+        const btnClearDraw = document.getElementById('btnClearDraw');
+        const penColorInput = document.getElementById('penColor');
+        const penWidthInput = document.getElementById('penWidth');
+        const penWidthLabel = document.getElementById('penWidthLabel');
+
+        const DEFAULT_COLORS = ['#e74c3c','#2980b9','#27ae60','#f39c12','#8e44ad','#1abc9c','#e67e22','#2c3e50','#c0392b','#16a085'];
+        let colorIndex = 0;
+        let functions = [], functionIdCounter = 0;
+        let annotations = [], annotationIdCounter = 0;
+
+        // 手绘状态
+        let drawings = [];               // 当前所有笔迹 {color, lineWidth, points:[{mx,my}]}
+        let currentMode = 'none';        // 'none' | 'pen' | 'eraser'
+        let isDrawing = false;
+        let currentStroke = null;
+        let historyStack = [[]];         // 快照栈，栈顶为当前状态
+        let redoStack = [];
+        const MAX_HISTORY = 60;
+
+        let viewSettings = {
+            xMin: -10, xMax: 10, xStep: 2, xLabel: 'x',
+            yMin: -10, yMax: 10, yStep: 2, yLabel: 'y',
+            chartTitle: '', showGrid: true, showAxisLabels: true,
+            gridLineWidth: 0.7, axisLineWidth: 1.8, tickLineWidth: 1,
+            tickFontWeight: 400, showSpecialTicks: false,
+        };
+
+        const PADDING = { top: 50, right: 40, bottom: 55, left: 60 };
+        const MAX_CANVAS_WIDTH = 750;
+
+        function showToast(msg) {
+            clearTimeout(window._toastTimer);
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            window._toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2000);
+        }
+
+        // ================= 表达式解析器 =================
+        class ExpressionParser {
+            constructor(expr) { this.expr=expr; this.pos=0; this.tokens=[]; this.tokenize(); }
+            tokenize() {
+                const s=this.expr, tokens=[]; let i=0;
+                while(i<s.length){const ch=s[i];if(ch===' '||ch==='\t'||ch==='\n'){i++;continue;}
+                if(/[0-9]/.test(ch)||(ch==='.'&&i+1<s.length&&/[0-9]/.test(s[i+1]))){let n='';while(i<s.length&&(/[0-9]/.test(s[i])||s[i]==='.'))n+=s[i++];tokens.push({type:'NUMBER',value:parseFloat(n)});continue;}
+                if(ch==='x'||ch==='X'){tokens.push({type:'VARIABLE',value:'x'});i++;if(i<s.length&&(/[0-9(]/.test(s[i])||/^[a-zA-Z]/.test(s[i])&&!this.isFunc(s,i))){if(/[0-9(]/.test(s[i]))tokens.push({type:'OPERATOR',value:'*'});}continue;}
+                if(s.substring(i,i+2).toLowerCase()==='pi'){tokens.push({type:'NUMBER',value:Math.PI});i+=2;if(i<s.length&&(/[0-9xX(]/.test(s[i])||/^[a-zA-Z]/.test(s[i])&&!this.isFunc(s,i))){if(/[0-9xX(]/.test(s[i]))tokens.push({type:'OPERATOR',value:'*'});}continue;}
+                if(ch==='e'||ch==='E'){if(tokens.length&&tokens[tokens.length-1].type==='NUMBER'&&i+1<s.length&&/[0-9+\-]/.test(s[i+1])){let ns=String(tokens.pop().value)+'e';i++;if(s[i]==='+'||s[i]==='-')ns+=s[i++];while(i<s.length&&/[0-9]/.test(s[i]))ns+=s[i++];tokens.push({type:'NUMBER',value:parseFloat(ns)});continue;}tokens.push({type:'NUMBER',value:Math.E});i++;if(i<s.length&&(/[0-9xX(]/.test(s[i])||/^[a-zA-Z]/.test(s[i])&&!this.isFunc(s,i))){if(/[0-9xX(]/.test(s[i]))tokens.push({type:'OPERATOR',value:'*'});}continue;}
+                const fm=this.matchFunc(s,i);if(fm){tokens.push({type:'FUNCTION',value:fm.name});i=fm.newIndex;continue;}
+                if('+-*/^'.includes(ch)){tokens.push({type:'OPERATOR',value:ch});i++;continue;}
+                if(ch==='('){tokens.push({type:'LPAREN'});i++;continue;}
+                if(ch===')'){tokens.push({type:'RPAREN'});i++;if(i<s.length&&(/[0-9xX(]/.test(s[i])||/^[a-zA-Z]/.test(s[i])&&!this.isFunc(s,i))){if(/[0-9xX(]/.test(s[i]))tokens.push({type:'OPERATOR',value:'*'});}continue;}
+                i++;}
+                const ft=[];for(let j=0;j<tokens.length;j++){ft.push(tokens[j]);if(j+1<tokens.length){const c=tokens[j],n=tokens[j+1];if(c.type==='NUMBER'&&(n.type==='VARIABLE'||n.type==='FUNCTION'||n.type==='LPAREN'))ft.push({type:'OPERATOR',value:'*'});if(c.type==='RPAREN'&&(n.type==='NUMBER'||n.type==='VARIABLE'||n.type==='FUNCTION'||n.type==='LPAREN'))ft.push({type:'OPERATOR',value:'*'});if(c.type==='VARIABLE'&&(n.type==='NUMBER'||n.type==='LPAREN'))ft.push({type:'OPERATOR',value:'*'});}}this.tokens=ft;
+            }
+            isFunc(s,i){return['sin','cos','tan','ln','log','sqrt','abs','arcsin','arccos','arctan','csc','sec','cot','sinh','cosh','tanh'].some(f=>s.substring(i,i+f.length).toLowerCase()===f);}
+            matchFunc(s,i){const fs=['sin','cos','tan','ln','log','sqrt','abs','arcsin','arccos','arctan','csc','sec','cot','sinh','cosh','tanh'];for(const f of fs)if(s.substring(i,i+f.length).toLowerCase()===f)return{name:f.toLowerCase(),newIndex:i+f.length};return null;}
+            peek(){return this.tokens[this.pos]||null;}
+            consume(){return this.tokens[this.pos++]||null;}
+            expect(t){const tk=this.consume();if(!tk||tk.type!==t)throw new Error(`期望${t}`);return tk;}
+            parseExpression(){let l=this.parseTerm();while(this.peek()&&this.peek().type==='OPERATOR'&&(this.peek().value==='+'||this.peek().value==='-')){const o=this.consume().value;l={type:'BINARY',op:o,left:l,right:this.parseTerm()};}return l;}
+            parseTerm(){let l=this.parseFactor();while(this.peek()&&this.peek().type==='OPERATOR'&&(this.peek().value==='*'||this.peek().value==='/')){const o=this.consume().value;l={type:'BINARY',op:o,left:l,right:this.parseFactor()};}return l;}
+            parseFactor(){let l=this.parsePower();if(this.peek()&&this.peek().type==='OPERATOR'&&this.peek().value==='^'){this.consume();l={type:'BINARY',op:'^',left:l,right:this.parseFactor()};}return l;}
+            parsePower(){if(this.peek()&&this.peek().type==='OPERATOR'&&(this.peek().value==='+'||this.peek().value==='-')){const o=this.consume().value;if(o==='-')return{type:'UNARY',op:'-',operand:this.parseAtom()};return this.parseAtom();}return this.parseAtom();}
+            parseAtom(){const tk=this.peek();if(!tk)throw new Error('不完整');if(tk.type==='NUMBER'){this.consume();return{type:'NUMBER',value:tk.value};}if(tk.type==='VARIABLE'){this.consume();return{type:'VARIABLE'};}if(tk.type==='FUNCTION'){const n=this.consume().value;let arg;if(this.peek()&&this.peek().type==='LPAREN'){this.consume();arg=this.parseExpression();this.expect('RPAREN');}else arg=this.parseAtom();return{type:'FUNCTION_CALL',name:n,argument:arg};}if(tk.type==='LPAREN'){this.consume();const e=this.parseExpression();this.expect('RPAREN');return e;}throw new Error('意外token');}
+            parse(){if(!this.tokens.length)return{type:'NUMBER',value:0};const ast=this.parseExpression();if(this.pos<this.tokens.length)throw new Error('多余token');return ast;}
+            static evaluate(ast,x){if(!ast)return NaN;switch(ast.type){case'NUMBER':return ast.value;case'VARIABLE':return x;case'UNARY':return -ExpressionParser.evaluate(ast.operand,x);case'BINARY':{const l=ExpressionParser.evaluate(ast.left,x),r=ExpressionParser.evaluate(ast.right,x);switch(ast.op){case'+':return l+r;case'-':return l-r;case'*':return l*r;case'/':return l/r;case'^':return Math.pow(l,r);}}case'FUNCTION_CALL':{const a=ExpressionParser.evaluate(ast.argument,x);const m={sin:Math.sin,cos:Math.cos,tan:Math.tan,ln:Math.log,log:Math.log10,sqrt:Math.sqrt,abs:Math.abs,arcsin:Math.asin,arccos:Math.acos,arctan:Math.atan,csc:v=>1/Math.sin(v),sec:v=>1/Math.cos(v),cot:v=>1/Math.tan(v),sinh:Math.sinh,cosh:Math.cosh,tanh:Math.tanh};return(m[ast.name]||(()=>NaN))(a);}}}
+        }
+
+        function compileExpression(expr){const t=expr.trim();if(!t)return null;try{const p=new ExpressionParser(t);const ast=p.parse();return{ast,evaluate:x=>ExpressionParser.evaluate(ast,x),source:t};}catch{return null;}}
+
+        // ================= 尺寸与坐标转换 =================
+        function resizeCanvas(){
+            const wrapperWidth = canvasWrapper.clientWidth;
+            const dpr = Math.min(devicePixelRatio || 1, 2);
+            const dw = Math.min(wrapperWidth - 4, MAX_CANVAS_WIDTH);
+            const availableWidth = dw - PADDING.left - PADDING.right;
+            const xRange = Math.max(0.1, viewSettings.xMax - viewSettings.xMin);
+            const yRange = Math.max(0.1, viewSettings.yMax - viewSettings.yMin);
+            const availableHeight = availableWidth * yRange / xRange;
+            const dh = PADDING.top + PADDING.bottom + availableHeight;
+            const minDh = 200, maxDh = 800;
+            const finalDh = Math.min(maxDh, Math.max(minDh, dh));
+            canvas.style.width = dw + 'px';
+            canvas.style.height = finalDh + 'px';
+            canvas.width = dw * dpr;
+            canvas.height = finalDh * dpr;
+            ctx.setTransform(1,0,0,1,0,0);
+            ctx.scale(dpr, dpr);
+            return {dw, dh: finalDh};
+        }
+
+        function getPlotArea(dw, dh){
+            return {x: PADDING.left, y: PADDING.top, w: dw - PADDING.left - PADDING.right, h: dh - PADDING.top - PADDING.bottom};
+        }
+
+        function mathToCanvas(mx, my, pa){
+            const sx = pa.x + ((mx - viewSettings.xMin) / (viewSettings.xMax - viewSettings.xMin)) * pa.w;
+            const sy = pa.y + pa.h - ((my - viewSettings.yMin) / (viewSettings.yMax - viewSettings.yMin)) * pa.h;
+            return {x: sx, y: sy};
+        }
+
+        function canvasToMath(cx, cy, pa){
+            const mx = viewSettings.xMin + ((cx - pa.x) / pa.w) * (viewSettings.xMax - viewSettings.xMin);
+            const my = viewSettings.yMin + ((pa.y + pa.h - cy) / pa.h) * (viewSettings.yMax - viewSettings.yMin);
+            return {mx, my};
+        }
+
+        // ================= 绘制主流程 =================
+        function drawAll(){
+            const {dw, dh} = resizeCanvas();
+            const pa = getPlotArea(dw, dh);
+            ctx.clearRect(0, 0, dw, dh);
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, dw, dh);
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(pa.x-5, pa.y-5, pa.w+10, pa.h+10);
+            ctx.clip();
+            if(viewSettings.showGrid) drawGrid(pa);
+            drawAxes(pa);
+            if(viewSettings.showAxisLabels) drawTickLabels(pa);
+            drawAxisLabels(pa, dw, dh);
+            if(viewSettings.chartTitle.trim()){
+                ctx.fillStyle='#2d3436'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center';
+                ctx.fillText(viewSettings.chartTitle.trim(), dw/2, PADDING.top/2+6);
+            }
+            for(const fn of functions) if(fn.compiled) drawCurve(fn, pa);
+            if(viewSettings.showSpecialTicks) drawSpecialYTicks(pa);
+            // 绘制手绘笔迹（在函数与特殊刻度之上）
+            drawStrokes(pa);
+            // 文字注释
+            for(const ann of annotations) drawAnnotation(ann, pa);
+            ctx.restore();
+            ctx.strokeStyle='#d0d4da'; ctx.lineWidth=1.5; ctx.setLineDash([]);
+            ctx.strokeRect(pa.x, pa.y, pa.w, pa.h);
+            // 水印
+            ctx.fillStyle = 'rgba(100, 149, 237, 0.5)';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('齐老师抖音34705717960', 10, dh - 10);
+            updateLegend();
+        }
+
+        function drawStrokes(pa){
+            for(const stroke of drawings){
+                if(stroke.points.length < 2) continue;
+                ctx.strokeStyle = stroke.color;
+                ctx.lineWidth = stroke.lineWidth;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                const p0 = mathToCanvas(stroke.points[0].mx, stroke.points[0].my, pa);
+                ctx.moveTo(p0.x, p0.y);
+                for(let i=1; i<stroke.points.length; i++){
+                    const p = mathToCanvas(stroke.points[i].mx, stroke.points[i].my, pa);
+                    ctx.lineTo(p.x, p.y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        // ================= 手绘交互 =================
+        function cloneDrawings(arr){
+            return arr.map(s => ({
+                color: s.color,
+                lineWidth: s.lineWidth,
+                points: s.points.map(p => ({mx: p.mx, my: p.my}))
+            }));
+        }
+
+        function pushHistory(){
+            historyStack.push(cloneDrawings(drawings));
+            redoStack = [];
+            if(historyStack.length > MAX_HISTORY) historyStack.shift();
+        }
+
+        function undo(){
+            if(historyStack.length <= 1){ showToast('没有可撤回的操作'); return; }
+            redoStack.push(historyStack.pop());
+            drawings = cloneDrawings(historyStack[historyStack.length-1]);
+            drawAll();
+            showToast('已撤回');
+        }
+
+        function redo(){
+            if(redoStack.length === 0){ showToast('没有可恢复的操作'); return; }
+            const state = redoStack.pop();
+            historyStack.push(state);
+            drawings = cloneDrawings(state);
+            drawAll();
+            showToast('已恢复');
+        }
+
+        function eraseAt(mx, my, pa){
+            const radiusPx = 14;
+            const rx = (radiusPx / pa.w) * (viewSettings.xMax - viewSettings.xMin);
+            const ry = (radiusPx / pa.h) * (viewSettings.yMax - viewSettings.yMin);
+            const result = [];
+            for(const stroke of drawings){
+                let segment = [];
+                for(const pt of stroke.points){
+                    const dx = (pt.mx - mx) / rx;
+                    const dy = (pt.my - my) / ry;
+                    if(dx*dx + dy*dy > 1){
+                        segment.push(pt);
+                    } else {
+                        if(segment.length >= 2) result.push({...stroke, points: segment});
+                        segment = [];
+                    }
+                }
+                if(segment.length >= 2) result.push({...stroke, points: segment});
+            }
+            drawings = result;
+        }
+
+        function setMode(mode){
+            currentMode = (currentMode === mode) ? 'none' : mode;
+            btnPen.classList.toggle('active', currentMode === 'pen');
+            btnEraser.classList.toggle('active', currentMode === 'eraser');
+            canvas.style.cursor = currentMode === 'none' ? 'crosshair' : (currentMode === 'pen' ? 'crosshair' : 'cell');
+            if(currentMode === 'pen') showToast('毛笔模式：按住拖动即可绘制');
+            else if(currentMode === 'eraser') showToast('橡皮擦模式：按住拖动擦除笔迹');
+        }
+
+        btnPen.addEventListener('click', () => setMode('pen'));
+        btnEraser.addEventListener('click', () => setMode('eraser'));
+        btnUndo.addEventListener('click', undo);
+        btnRedo.addEventListener('click', redo);
+        penWidthInput.addEventListener('input', () => { penWidthLabel.textContent = penWidthInput.value; });
+        btnClearDraw.addEventListener('click', () => {
+            if(drawings.length === 0){ showToast('没有笔迹可清除'); return; }
+            if(confirm('清除所有手绘笔迹？')){
+                drawings = [];
+                pushHistory();
+                drawAll();
+                showToast('已清除所有笔迹');
+            }
+        });
+
+        // 鼠标/触摸事件
+        canvas.addEventListener('pointerdown', (e) => {
+            if(currentMode === 'none') return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const dw = parseFloat(canvas.style.width);
+            const dh = parseFloat(canvas.style.height);
+            const pa = getPlotArea(dw, dh);
+            if(cx < pa.x || cx > pa.x + pa.w || cy < pa.y || cy > pa.y + pa.h) return;
+            const {mx, my} = canvasToMath(cx, cy, pa);
+            isDrawing = true;
+            if(currentMode === 'pen'){
+                currentStroke = {
+                    color: penColorInput.value,
+                    lineWidth: parseFloat(penWidthInput.value),
+                    points: [{mx, my}]
+                };
+                drawings.push(currentStroke);
+            } else if(currentMode === 'eraser'){
+                eraseAt(mx, my, pa);
+            }
+            drawAll();
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            if(!isDrawing) return;
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
+            const dw = parseFloat(canvas.style.width);
+            const dh = parseFloat(canvas.style.height);
+            const pa = getPlotArea(dw, dh);
+            const {mx, my} = canvasToMath(cx, cy, pa);
+            if(currentMode === 'pen' && currentStroke){
+                const last = currentStroke.points[currentStroke.points.length-1];
+                const dist = Math.hypot(mx - last.mx, my - last.my);
+                const minDist = (2 / pa.w) * (viewSettings.xMax - viewSettings.xMin);
+                if(dist >= minDist){
+                    currentStroke.points.push({mx, my});
+                    drawAll();
+                }
+            } else if(currentMode === 'eraser'){
+                eraseAt(mx, my, pa);
+                drawAll();
+            }
+        });
+
+        function finishDrawing(){
+            if(!isDrawing) return;
+            isDrawing = false;
+            currentStroke = null;
+            pushHistory();
+        }
+        window.addEventListener('pointerup', finishDrawing);
+        canvas.addEventListener('pointercancel', finishDrawing);
+        canvas.addEventListener('pointerleave', (e) => {
+            // 仅鼠标离开时结束（触摸时pointerup已在window捕获）
+            if(e.pointerType === 'mouse') finishDrawing();
+        });
+
+        // ================= 网格/坐标轴/刻度绘制 =================
+        function drawGrid(pa){
+            const {xMin, xMax, xStep, yMin, yMax, yStep, gridLineWidth} = viewSettings;
+            ctx.strokeStyle = '#e8ecf1';
+            ctx.lineWidth = gridLineWidth;
+            ctx.setLineDash([7, 5]);
+            for(let gx = Math.ceil(xMin/xStep)*xStep; gx <= xMax; gx += xStep){
+                const sx = mathToCanvas(gx, 0, pa).x;
+                if(sx >= pa.x && sx <= pa.x+pa.w){
+                    ctx.beginPath(); ctx.moveTo(sx, pa.y); ctx.lineTo(sx, pa.y+pa.h); ctx.stroke();
+                }
+            }
+            for(let gy = Math.ceil(yMin/yStep)*yStep; gy <= yMax; gy += yStep){
+                const sy = mathToCanvas(0, gy, pa).y;
+                if(sy >= pa.y && sy <= pa.y+pa.h){
+                    ctx.beginPath(); ctx.moveTo(pa.x, sy); ctx.lineTo(pa.x+pa.w, sy); ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+        }
+
+        function drawAxes(pa){
+            const o = mathToCanvas(0, 0, pa);
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = viewSettings.axisLineWidth;
+            ctx.setLineDash([]);
+            let xArrow = null, yArrow = null;
+            if(o.y >= pa.y && o.y <= pa.y+pa.h){
+                ctx.beginPath(); ctx.moveTo(pa.x, o.y); ctx.lineTo(pa.x+pa.w, o.y); ctx.stroke();
+                drawArrow(pa.x+pa.w, o.y, 'right'); xArrow = {x:pa.x+pa.w, y:o.y};
+            } else if(o.y < pa.y){
+                ctx.beginPath(); ctx.moveTo(pa.x, pa.y+pa.h); ctx.lineTo(pa.x+pa.w, pa.y+pa.h); ctx.stroke();
+                drawArrow(pa.x+pa.w, pa.y+pa.h, 'right'); xArrow = {x:pa.x+pa.w, y:pa.y+pa.h};
+            } else {
+                ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pa.x+pa.w, pa.y); ctx.stroke();
+                drawArrow(pa.x+pa.w, pa.y, 'right'); xArrow = {x:pa.x+pa.w, y:pa.y};
+            }
+            if(o.x >= pa.x && o.x <= pa.x+pa.w){
+                ctx.beginPath(); ctx.moveTo(o.x, pa.y); ctx.lineTo(o.x, pa.y+pa.h); ctx.stroke();
+                drawArrow(o.x, pa.y, 'up'); yArrow = {x:o.x, y:pa.y};
+            } else if(o.x < pa.x){
+                ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pa.x, pa.y+pa.h); ctx.stroke();
+                drawArrow(pa.x, pa.y, 'up'); yArrow = {x:pa.x, y:pa.y};
+            } else {
+                ctx.beginPath(); ctx.moveTo(pa.x+pa.w, pa.y); ctx.lineTo(pa.x+pa.w, pa.y+pa.h); ctx.stroke();
+                drawArrow(pa.x+pa.w, pa.y, 'up'); yArrow = {x:pa.x+pa.w, y:pa.y};
+            }
+            ctx.fillStyle = '#2d3436';
+            ctx.font = 'bold italic 14px sans-serif';
+            if(xArrow){ ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillText(viewSettings.xLabel||'x', xArrow.x+8, xArrow.y); }
+            if(yArrow){ ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.fillText(viewSettings.yLabel||'y', yArrow.x, yArrow.y-10); }
+        }
+
+        function drawArrow(x, y, dir){
+            ctx.fillStyle='#555';
+            ctx.beginPath();
+            if(dir === 'right'){ ctx.moveTo(x,y); ctx.lineTo(x-10,y-5); ctx.lineTo(x-10,y+5); }
+            else { ctx.moveTo(x,y); ctx.lineTo(x-5,y+10); ctx.lineTo(x+5,y+10); }
+            ctx.closePath(); ctx.fill();
+        }
+
+        function drawTickLabels(pa){
+            const {xMin, xMax, xStep, yMin, yMax, yStep, tickLineWidth, tickFontWeight} = viewSettings;
+            const origin = mathToCanvas(0,0,pa);
+            const axisY = Math.max(pa.y, Math.min(pa.y+pa.h, origin.y));
+            ctx.fillStyle = '#444';
+            ctx.font = `${tickFontWeight} 11px sans-serif`;
+            for(let gx = Math.ceil(xMin/xStep)*xStep; gx <= xMax+1e-9; gx += xStep){
+                const sx = mathToCanvas(gx,0,pa).x;
+                if(sx >= pa.x-2 && sx <= pa.x+pa.w+2){
+                    ctx.strokeStyle='#555'; ctx.lineWidth=tickLineWidth; ctx.setLineDash([]);
+                    ctx.beginPath(); ctx.moveTo(sx, axisY-5); ctx.lineTo(sx, axisY+5); ctx.stroke();
+                    ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(formatTick(gx), sx, axisY+8);
+                }
+            }
+            const axisX = Math.max(pa.x, Math.min(pa.x+pa.w, origin.x));
+            for(let gy = Math.ceil(yMin/yStep)*yStep; gy <= yMax+1e-9; gy += yStep){
+                const sy = mathToCanvas(0,gy,pa).y;
+                if(sy >= pa.y-2 && sy <= pa.y+pa.h+2){
+                    ctx.strokeStyle='#555'; ctx.lineWidth=tickLineWidth; ctx.setLineDash([]);
+                    ctx.beginPath(); ctx.moveTo(axisX-5, sy); ctx.lineTo(axisX+5, sy); ctx.stroke();
+                    ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(formatTick(gy), axisX-8, sy);
+                }
+            }
+        }
+
+        function drawSpecialYTicks(pa){
+            const vals = [Math.sqrt(2), Math.sqrt(3), -Math.sqrt(2), -Math.sqrt(3)];
+            const labs = ['√2','√3','-√2','-√3'];
+            const o = mathToCanvas(0,0,pa);
+            const ax = Math.max(pa.x, Math.min(pa.x+pa.w, o.x));
+            const fontWeight = viewSettings.tickFontWeight || 400;
+            ctx.font = `italic ${fontWeight} 10px sans-serif`;
+            ctx.fillStyle = '#000000';
+            for(let i=0; i<vals.length; i++){
+                if(vals[i] < viewSettings.yMin || vals[i] > viewSettings.yMax) continue;
+                const sy = mathToCanvas(0, vals[i], pa).y;
+                if(sy < pa.y-5 || sy > pa.y+pa.h+5) continue;
+                ctx.strokeStyle='#000000'; ctx.lineWidth = viewSettings.tickLineWidth || 1;
+                ctx.beginPath(); ctx.moveTo(ax-8, sy); ctx.lineTo(ax+8, sy); ctx.stroke();
+                ctx.fillText(labs[i], ax-12, sy);
+            }
+        }
+
+        function formatTick(n){
+            if(Number.isInteger(n)) return String(n);
+            const s = n.toFixed(4); let t = s.replace(/0+$/, '');
+            if(t.endsWith('.')) t = t.slice(0, -1);
+            return t.length > 6 ? n.toExponential(2) : t;
+        }
+
+        function drawAxisLabels(pa, dw, dh){
+            ctx.fillStyle='#2d3436'; ctx.font='bold 13px sans-serif';
+            ctx.textAlign='center'; ctx.textBaseline='top';
+            if(pa.y+pa.h+18 < dh-5) ctx.fillText(viewSettings.xLabel||'x', pa.x+pa.w/2, pa.y+pa.h+18);
+            ctx.save(); ctx.translate(pa.x-42, pa.y+pa.h/2); ctx.rotate(-Math.PI/2);
+            ctx.textAlign='center'; ctx.textBaseline='bottom';
+            ctx.fillText(viewSettings.yLabel||'y', 0, 0); ctx.restore();
+        }
+
+        function drawCurve(fn, pa){
+            if(!fn.compiled || !fn.visible) return;
+            const {xMin, xMax} = viewSettings;
+            let startX = xMin, endX = xMax;
+            if(fn.domainMin !== null && !isNaN(fn.domainMin)) startX = Math.max(startX, fn.domainMin);
+            if(fn.domainMax !== null && !isNaN(fn.domainMax)) endX = Math.min(endX, fn.domainMax);
+            if(startX >= endX) return;
+            const steps = Math.max(pa.w * 2, 600), dx = (endX - startX) / steps, jump = pa.h * 8;
+            ctx.strokeStyle = fn.color;
+            ctx.lineWidth = fn.lineWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.setLineDash(fn.dashed ? [7,5] : []);
+            ctx.beginPath();
+            let started = false, prevY = null;
+            for(let i = 0; i <= steps; i++){
+                const mx = startX + i * dx;
+                let my;
+                try { my = fn.compiled.evaluate(mx); } catch { my = NaN; }
+                if(!isFinite(my) || isNaN(my)){
+                    if(started){ ctx.stroke(); ctx.beginPath(); started = false; prevY = null; }
+                    continue;
+                }
+                const pt = mathToCanvas(mx, my, pa);
+                if(pt.y < pa.y - pa.h*2 || pt.y > pa.y + pa.h + pa.h*2){
+                    if(started && prevY !== null && Math.abs(pt.y - prevY) > jump){
+                        ctx.stroke(); ctx.beginPath(); started = false; prevY = null; continue;
+                    }
+                    if(started) ctx.lineTo(pt.x, Math.max(pa.y - pa.h*2, Math.min(pa.y + pa.h + pa.h*2, pt.y)));
+                    prevY = pt.y; continue;
+                }
+                if(started && prevY !== null && Math.abs(pt.y - prevY) > jump){
+                    ctx.stroke(); ctx.beginPath(); started = false;
+                }
+                if(!started){ ctx.moveTo(pt.x, pt.y); started = true; }
+                else ctx.lineTo(pt.x, pt.y);
+                prevY = pt.y;
+            }
+            if(started) ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawAnnotation(ann, pa){
+            const pt = mathToCanvas(ann.x, ann.y, pa);
+            if(pt.x < pa.x-30 || pt.x > pa.x+pa.w+30 || pt.y < pa.y-30 || pt.y > pa.y+pa.h+30) return;
+            ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            const tw = ctx.measureText(ann.text).width;
+            ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillRect(pt.x - tw/2 - 6, pt.y - 22, tw + 12, 20);
+            ctx.strokeStyle = ann.color || '#e74c3c'; ctx.lineWidth = 1.5; ctx.strokeRect(pt.x - tw/2 - 6, pt.y - 22, tw + 12, 20);
+            ctx.fillStyle = ann.color || '#e74c3c'; ctx.fillText(ann.text, pt.x, pt.y - 5);
+            ctx.beginPath(); ctx.arc(pt.x, pt.y, 3.5, 0, 2*Math.PI); ctx.fill(); ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
+        }
+
+        function updateLegend(){
+            const vf = functions.filter(f => f.visible && f.compiled);
+            if(!vf.length){ legendBar.innerHTML = '<span style="color:#999">暂无函数</span>'; return; }
+            legendBar.innerHTML = vf.map((f, i) => `<span class="legend-item"><span class="legend-swatch" style="background:${f.color};height:${Math.max(2, f.lineWidth)}px;${f.dashed ? 'border-bottom:' + Math.max(2, f.lineWidth) + 'px solid ' + f.color : ''}"></span>f${i+1}(x)=${escapeHtml(f.expression)}${f.dashed ? ' (虚线)' : ''}${f.domainMin !== null || f.domainMax !== null ? ` [${f.domainMin ?? '-∞'}, ${f.domainMax ?? '∞'}]` : ''}</span>`).join('');
+        }
+
+        function escapeHtml(s){ const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        function renderFunctions(){
+            functionListEl.innerHTML = functions.map((f, i) => {
+                const err = f.expression.trim() && !f.compiled;
+                return `<div class="function-item">
+                    <span class="fn-index" style="background:${f.color}">${i+1}</span>
+                    <input class="expr-input ${err ? 'error' : ''}" value="${escapeHtml(f.expression)}" data-id="${f.id}" placeholder="表达式">
+                    <input type="color" class="color-picker" value="${f.color}" data-id="${f.id}">
+                    <input type="range" class="thickness-slider" min="1" max="6" step="0.5" value="${f.lineWidth}" data-id="${f.id}">
+                    <span class="thickness-label">${f.lineWidth}</span>
+                    <label class="dashed-toggle"><input type="checkbox" class="dashed-check" data-id="${f.id}" ${f.dashed ? 'checked' : ''}>虚</label>
+                    <span class="domain-group">
+                        域:<input type="text" class="domain-min" data-id="${f.id}" placeholder="min" value="${f.domainMin ?? ''}" style="width:36px;">
+                        ~<input type="text" class="domain-max" data-id="${f.id}" placeholder="max" value="${f.domainMax ?? ''}" style="width:36px;">
+                    </span>
+                    <button class="btn-remove" data-id="${f.id}">×</button>
+                </div>`;
+            }).join('') || '<div style="color:#999;text-align:center;padding:16px;">点击添加函数</div>';
+
+            document.querySelectorAll('.expr-input').forEach(inp => inp.addEventListener('input', e => {
+                const fn = functions.find(x => x.id === +e.target.dataset.id);
+                if(fn){ fn.expression = e.target.value; fn.compiled = compileExpression(fn.expression); e.target.classList.toggle('error', fn.expression.trim() && !fn.compiled); drawAll(); }
+            }));
+            document.querySelectorAll('.color-picker').forEach(c => c.addEventListener('input', e => {
+                const fn = functions.find(x => x.id === +e.target.dataset.id); if(fn){ fn.color = e.target.value; drawAll(); }
+            }));
+            document.querySelectorAll('.thickness-slider').forEach(s => s.addEventListener('input', e => {
+                const fn = functions.find(x => x.id === +e.target.dataset.id); if(fn){ fn.lineWidth = +e.target.value; renderFunctions(); drawAll(); }
+            }));
+            document.querySelectorAll('.dashed-check').forEach(cb => cb.addEventListener('change', e => {
+                const fn = functions.find(x => x.id === +e.target.dataset.id); if(fn){ fn.dashed = e.target.checked; drawAll(); }
+            }));
+            document.querySelectorAll('.domain-min').forEach(inp => inp.addEventListener('input', e => {
+                const fn = functions.find(x => x.id === +e.target.dataset.id);
+                if(fn){ const val = e.target.value.trim(); fn.domainMin = val === '' ? null : parseFloat(val); drawAll(); }
+            }));
+            document.querySelectorAll('.domain-max').forEach(inp => inp.addEventListener('input', e => {
+                const fn = functions.find(x => x.id === +e.target.dataset.id);
+                if(fn){ const val = e.target.value.trim(); fn.domainMax = val === '' ? null : parseFloat(val); drawAll(); }
+            }));
+            document.querySelectorAll('.btn-remove').forEach(b => b.addEventListener('click', e => {
+                functions = functions.filter(x => x.id !== +e.target.dataset.id); renderFunctions(); drawAll(); showToast('已删除');
+            }));
+        }
+
+        function renderAnnotations(){
+            annotationListEl.innerHTML = annotations.map(a => `
+                <div class="annotation-item">
+                    <input class="ann-text" value="${escapeHtml(a.text)}" data-id="${a.id}" data-field="text">
+                    <span>坐标:</span><input type="number" value="${a.x}" step="any" data-id="${a.id}" data-field="x" style="width:60px;">
+                    <input type="number" value="${a.y}" step="any" data-id="${a.id}" data-field="y" style="width:60px;">
+                    <input type="color" value="${a.color}" data-id="${a.id}" data-field="color" style="width:28px;">
+                    <button class="btn-remove" data-id="${a.id}">×</button>
+                </div>`).join('') || '<div style="color:#999;text-align:center;padding:8px;">暂无标注</div>';
+            document.querySelectorAll('#annotationList input').forEach(i => i.addEventListener('input', e => {
+                const a = annotations.find(x => x.id === +e.target.dataset.id);
+                if(a){ const f = e.target.dataset.field; if(f === 'text') a.text = e.target.value; else if(f === 'x') a.x = +e.target.value || 0; else if(f === 'y') a.y = +e.target.value || 0; else if(f === 'color') a.color = e.target.value; drawAll(); }
+            }));
+            document.querySelectorAll('#annotationList .btn-remove').forEach(b => b.addEventListener('click', e => {
+                annotations = annotations.filter(x => x.id !== +e.target.dataset.id); renderAnnotations(); drawAll();
+            }));
+        }
+
+        function addFunction(expr='', color=null, lw=2, dashed=false){
+            if(!color){ color = DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length]; colorIndex++; }
+            const compiled = expr.trim() ? compileExpression(expr) : null;
+            functions.push({id: ++functionIdCounter, expression: expr, compiled, color, lineWidth: lw, dashed, visible: true, domainMin: null, domainMax: null});
+            renderFunctions(); drawAll();
+        }
+        function addAnnotation(text='标注', x=0, y=0, color='#e74c3c'){ annotations.push({id: ++annotationIdCounter, text, x, y, color}); renderAnnotations(); drawAll(); }
+
+        function applySettings(){
+            viewSettings.xMin = +inputXMin.value || -10; viewSettings.xMax = +inputXMax.value || 10; viewSettings.xStep = +inputXStep.value || 2; viewSettings.xLabel = inputXLabel.value;
+            viewSettings.yMin = +inputYMin.value || -10; viewSettings.yMax = +inputYMax.value || 10; viewSettings.yStep = +inputYStep.value || 2; viewSettings.yLabel = inputYLabel.value;
+            viewSettings.chartTitle = inputChartTitle.value; viewSettings.showGrid = inputShowGrid.checked; viewSettings.showAxisLabels = inputShowAxisLabels.checked;
+            viewSettings.gridLineWidth = +inputGridLineWidth.value || 0.7; viewSettings.axisLineWidth = +inputAxisLineWidth.value || 1.8;
+            viewSettings.tickLineWidth = +inputTickLineWidth.value || 1; viewSettings.tickFontWeight = +inputTickFontWeight.value || 400;
+            viewSettings.showSpecialTicks = inputShowSpecialTicks.checked;
+            if(viewSettings.xStep <= 0) viewSettings.xStep = 2; if(viewSettings.yStep <= 0) viewSettings.yStep = 2;
+            if(viewSettings.xMin >= viewSettings.xMax) viewSettings.xMax = viewSettings.xMin + 10;
+            if(viewSettings.yMin >= viewSettings.yMax) viewSettings.yMax = viewSettings.yMin + 10;
+            syncInputs();
+        }
+
+        function syncInputs(){
+            inputXMin.value = viewSettings.xMin; inputXMax.value = viewSettings.xMax; inputXStep.value = viewSettings.xStep; inputXLabel.value = viewSettings.xLabel;
+            inputYMin.value = viewSettings.yMin; inputYMax.value = viewSettings.yMax; inputYStep.value = viewSettings.yStep; inputYLabel.value = viewSettings.yLabel;
+            inputChartTitle.value = viewSettings.chartTitle; inputShowGrid.checked = viewSettings.showGrid; inputShowAxisLabels.checked = viewSettings.showAxisLabels;
+            inputGridLineWidth.value = viewSettings.gridLineWidth; inputAxisLineWidth.value = viewSettings.axisLineWidth;
+            inputTickLineWidth.value = viewSettings.tickLineWidth; inputTickFontWeight.value = viewSettings.tickFontWeight;
+            inputShowSpecialTicks.checked = viewSettings.showSpecialTicks;
+        }
+
+        function exportImage(){
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = '函数图像.png'; link.href = dataURL; link.click();
+            showToast('图片已导出');
+        }
+
+        document.getElementById('btnAddFunction').addEventListener('click', () => { addFunction(); setTimeout(() => { const i = document.querySelectorAll('.expr-input'); if(i.length) i[i.length-1].focus(); }, 100); });
+        document.getElementById('btnClearAll').addEventListener('click', () => { if(functions.length && confirm('清空所有函数？')){ functions = []; renderFunctions(); drawAll(); showToast('已清空'); } });
+        document.getElementById('btnAddAnnotation').addEventListener('click', () => addAnnotation());
+        document.getElementById('btnApplySettings').addEventListener('click', () => { applySettings(); drawAll(); showToast('设置已应用'); });
+        document.getElementById('btnResetView').addEventListener('click', () => {
+            viewSettings = {xMin:-10, xMax:10, xStep:2, xLabel:'x', yMin:-10, yMax:10, yStep:2, yLabel:'y', chartTitle:'', showGrid:true, showAxisLabels:true, gridLineWidth:0.7, axisLineWidth:1.8, tickLineWidth:1, tickFontWeight:400, showSpecialTicks:false};
+            syncInputs(); drawAll(); showToast('视图已重置');
+        });
+        document.getElementById('btnExportImage').addEventListener('click', exportImage);
+        document.getElementById('presetButtons').addEventListener('click', e => {
+            const tag = e.target.closest('.preset-tag');
+            if(!tag) return;
+            const expr = tag.dataset.expr;
+            const expr2 = tag.dataset.expr2;
+            const currentColor = DEFAULT_COLORS[colorIndex % DEFAULT_COLORS.length];
+            if(expr2){
+                addFunction(expr, currentColor, 2, false);
+                addFunction(expr2, currentColor, 2, false);
+                colorIndex++;
+            } else {
+                addFunction(expr);
+            }
+        });
+
+        [inputXMin, inputXMax, inputXStep, inputXLabel, inputYMin, inputYMax, inputYStep, inputYLabel, inputChartTitle, inputGridLineWidth, inputAxisLineWidth, inputTickLineWidth].forEach(i => { i.addEventListener('change', () => { applySettings(); drawAll(); }); i.addEventListener('blur', () => { applySettings(); drawAll(); }); });
+        inputTickFontWeight.addEventListener('change', () => { applySettings(); drawAll(); });
+        [inputShowGrid, inputShowAxisLabels, inputShowSpecialTicks].forEach(i => i.addEventListener('change', () => { applySettings(); drawAll(); }));
+
+        window.addEventListener('resize', () => { clearTimeout(window._rsz); window._rsz = setTimeout(drawAll, 200); });
+
+        // 点击显示坐标（绘制模式下禁用）
+        canvas.addEventListener('click', e => {
+            if(currentMode !== 'none') return;
+            const dw = +canvas.style.width.replace('px',''), dh = +canvas.style.height.replace('px','');
+            const pa = getPlotArea(dw, dh); const rect = canvas.getBoundingClientRect();
+            const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+            const mx = viewSettings.xMin + ((cx - pa.x) / pa.w) * (viewSettings.xMax - viewSettings.xMin);
+            const my = viewSettings.yMin + ((pa.y + pa.h - cy) / pa.h) * (viewSettings.yMax - viewSettings.yMin);
+            if(cx >= pa.x && cx <= pa.x+pa.w && cy >= pa.y && cy <= pa.y+pa.h) showToast(`坐标: (${formatTick(mx)}, ${formatTick(my)})`);
+        });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', e => {
+            if((e.ctrlKey || e.ctrlKey) && e.key === 'n'){ e.preventDefault(); addFunction(); }
+            if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey){ e.preventDefault(); undo(); }
+            if((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))){ e.preventDefault(); redo(); }
+            if(e.key === 'Escape' && currentMode !== 'none'){ setMode(currentMode); }
+        });
+
+        syncInputs();
+        addFunction('sin(x)', '#e74c3c', 2, false);
+        addFunction('x^2-4', '#2980b9', 2, false);
+        addAnnotation('交点', 1.5, 2.5, '#e74c3c');
+        drawAll();
+    })();
+</script>
+  <script>
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+  
+  document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+  
+  document.addEventListener('keydown', function(e) {
+    if (e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.keyCode === 27) { saveScrollAndReturn(); }
+  });
+  
+  document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+  
+  function saveScrollAndReturn() {
+    window.location.href = '../index.html';
+  }
+  
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  
+  document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
