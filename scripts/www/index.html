@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>齐老师动画 - 高中物理交互式动画合集</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #1a2332;
+      font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+      color: #e0e6ed;
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      padding: 50px 20px 40px;
+      background: linear-gradient(135deg, #1a2332 0%, #2a3a52 100%);
+      border-bottom: 2px solid rgba(100, 150, 200, 0.3);
+    }
+    .header h1 {
+      font-size: 48px;
+      color: #8ab4f8;
+      letter-spacing: 10px;
+      margin-bottom: 15px;
+      text-shadow: 0 0 30px rgba(138, 180, 248, 0.4);
+    }
+    .header .subtitle {
+      font-size: 18px;
+      color: #8899aa;
+      letter-spacing: 3px;
+      margin-bottom: 25px;
+    }
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 25px;
+      flex-wrap: wrap;
+    }
+    .stat-item {
+      background: rgba(100, 150, 200, 0.1);
+      padding: 12px 25px;
+      border-radius: 10px;
+      border: 1px solid rgba(100, 150, 200, 0.2);
+    }
+    .stat-item .num {
+      font-size: 28px;
+      font-weight: bold;
+      color: #8ab4f8;
+    }
+    .stat-item .label {
+      font-size: 14px;
+      color: #8899aa;
+      margin-left: 8px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px 60px;
+    }
+    .module-section { margin-bottom: 50px; }
+    .module-title {
+      font-size: 26px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      padding-left: 18px;
+      border-left: 5px solid #8ab4f8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .module-title .count {
+      font-size: 14px;
+      color: #8899aa;
+      font-weight: normal;
+      margin-left: 10px;
+    }
+    .anim-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .anim-card {
+      background: rgba(100, 150, 200, 0.08);
+      border: 1px solid rgba(100, 150, 200, 0.2);
+      border-radius: 10px;
+      padding: 16px;
+      text-decoration: none;
+      color: #c0d0e0;
+      transition: all 0.3s;
+      display: block;
+      position: relative;
+      overflow: hidden;
+      font-size: 14px;
+    }
+    .anim-card:hover {
+      background: rgba(100, 150, 200, 0.2);
+      border-color: rgba(138, 180, 248, 0.5);
+      color: #8ab4f8;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+    .anim-card .anim-name {
+      font-weight: 500;
+      line-height: 1.4;
+    }
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: #556677;
+      font-size: 14px;
+      border-top: 1px solid rgba(100, 150, 200, 0.1);
+    }
+    .footer .watermark { margin-top: 8px; color: #445566; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>齐老师动画</h1>
+    <div class="subtitle">高中物理交互式动画 · 全覆盖</div>
+    <div class="stats">
+      <div class="stat-item"><span class="num">10</span><span class="label">个动画</span></div>
+      <div class="stat-item"><span class="num">6</span><span class="label">个模块</span></div>
+      <div class="stat-item"><span class="num">高中物理</span><span class="label">全覆盖</span></div>
+    </div>
+  </div>
+  
+  <div class="container">
+    <div class="module-section">
+      <div class="module-title">
+        <span>动量模块</span>
+        <span class="count">(1 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="1动量/1小球凹槽块不固定2.html" class="anim-card">
+          <div class="anim-name">小球凹槽块不固定2</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>电磁模块</span>
+        <span class="count">(2 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="2电磁/2电路实验室2.html" class="anim-card">
+          <div class="anim-name">电路实验室2</div>
+        </a>
+        <a href="2电磁/2示波器.html" class="anim-card">
+          <div class="anim-name">示波器</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>选修模块</span>
+        <span class="count">(2 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="3选修/3波的干涉xy轴.html" class="anim-card">
+          <div class="anim-name">波的干涉xy轴</div>
+        </a>
+        <a href="3选修/3牛顿环.html" class="anim-card">
+          <div class="anim-name">牛顿环</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>必修一</span>
+        <span class="count">(2 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="4必修一/4倾斜传送带 - .html" class="anim-card">
+          <div class="anim-name">倾斜传送带 -</div>
+        </a>
+        <a href="4必修一/4追及警察抓小偷 .html" class="anim-card">
+          <div class="anim-name">追及警察抓小偷</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>必修二</span>
+        <span class="count">(1 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="5必修二/5小球冲固定半圆轨.html" class="anim-card">
+          <div class="anim-name">小球冲固定半圆轨</div>
+        </a>
+      </div>
+    </div>
+    <div class="module-section">
+      <div class="module-title">
+        <span>其他</span>
+        <span class="count">(2 个)</span>
+      </div>
+      <div class="anim-grid">
+        <a href="6其他/6函数图像生成器.html" class="anim-card">
+          <div class="anim-name">函数图像生成器</div>
+        </a>
+        <a href="6其他/6数学物理画板.html" class="anim-card">
+          <div class="anim-name">数学物理画板</div>
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    齐老师动画 · 高中物理交互式动画合集<br>
+    <div class="watermark">QQ 3398528250 / 抖音 35320300542</div>
+  </div>
+  
+  <script>
+  function saveScrollPosition() {
+    localStorage.setItem('qilai_scroll_top', window.scrollY);
+  }
+  function restoreScrollPosition() {
+    const savedScrollTop = localStorage.getItem('qilai_scroll_top');
+    if (savedScrollTop) {
+      window.scrollTo(0, parseInt(savedScrollTop));
+    }
+  }
+  window.addEventListener('load', restoreScrollPosition);
+  document.addEventListener('DOMContentLoaded', function() {
+    const links = document.querySelectorAll('.anim-card');
+    links.forEach(function(link) {
+      link.addEventListener('click', saveScrollPosition);
+    });
+  });
+  document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    return false;
+  });
+  document.addEventListener('mousedown', function(e) {
+    if (e.button === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.keyCode === 123) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 74 || e.keyCode === 67)) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 83) { e.preventDefault(); e.stopPropagation(); return false; }
+    if (e.ctrlKey && e.keyCode === 80) { e.preventDefault(); e.stopPropagation(); return false; }
+  });
+  document.addEventListener('copy', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('paste', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('cut', function(e) { e.preventDefault(); return false; });
+  document.addEventListener('selectstart', function(e) {
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      return false;
+    }
+  });
+  document.addEventListener('dragstart', function(e) {
+    e.preventDefault();
+    return false;
+  });
+  </script>
+</body>
+</html>
